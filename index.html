@@ -2,7 +2,9 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 移动端视口设置：禁止缩放抖动，宽度跟随设备 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#4f46e5">
     <title>我的音频分享站</title>
     <style>
         :root {
@@ -14,13 +16,22 @@
             --text-light: #64748b;
             --border: #e2e8f0;
             --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
             --radius: 12px;
+            --gap: 16px;
+            --page-padding: 20px;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            font-size: 16px;
+            -webkit-text-size-adjust: 100%;
         }
 
         body {
@@ -28,47 +39,57 @@
             background: var(--bg);
             color: var(--text);
             line-height: 1.6;
-            padding: 20px;
+            padding: var(--page-padding);
+            padding-top: max(var(--page-padding), env(safe-area-inset-top));
+            padding-bottom: max(var(--page-padding), env(safe-area-inset-bottom));
+            padding-left: max(var(--page-padding), env(safe-area-inset-left));
+            padding-right: max(var(--page-padding), env(safe-area-inset-right));
+            min-height: 100vh;
         }
 
         .container {
             max-width: 900px;
             margin: 0 auto;
+            width: 100%;
         }
 
+        /* ========== 头部 ========== */
         header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: clamp(20px, 4vw, 36px);
         }
 
         header h1 {
-            font-size: 2.5rem;
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
             font-weight: 700;
             color: var(--primary);
             letter-spacing: -0.5px;
+            line-height: 1.3;
         }
 
         header p {
             color: var(--text-light);
-            font-size: 1.1rem;
+            font-size: clamp(0.875rem, 2.5vw, 1.05rem);
+            margin-top: 4px;
         }
 
+        /* ========== 控制栏 ========== */
         .controls {
             display: flex;
-            flex-wrap: wrap;
             gap: 12px;
-            margin-bottom: 30px;
+            margin-bottom: clamp(20px, 4vw, 30px);
         }
 
         .search-box {
             flex: 1;
-            min-width: 200px;
-            padding: 10px 16px;
+            min-width: 0;
+            padding: 12px 16px;
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 1rem;
             background: var(--card-bg);
             transition: border-color 0.2s, box-shadow 0.2s;
+            font-family: inherit;
         }
 
         .search-box:focus {
@@ -78,13 +99,15 @@
         }
 
         .category-select {
-            padding: 10px 16px;
+            padding: 12px 16px;
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 1rem;
             background: var(--card-bg);
             cursor: pointer;
-            min-width: 150px;
+            min-width: 140px;
+            font-family: inherit;
+            color: var(--text);
         }
 
         .category-select:focus {
@@ -92,10 +115,11 @@
             border-color: var(--primary);
         }
 
+        /* ========== 列表 ========== */
         .audio-list {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: var(--gap);
         }
 
         .audio-card {
@@ -103,21 +127,25 @@
             border: 1px solid var(--border);
             border-radius: var(--radius);
             box-shadow: var(--shadow);
-            padding: 20px;
+            padding: clamp(14px, 3vw, 20px);
             display: flex;
-            gap: 16px;
+            gap: clamp(12px, 3vw, 18px);
             transition: transform 0.2s, box-shadow 0.2s;
+            overflow: hidden;
         }
 
-        .audio-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+        /* 仅在支持悬停的设备上启用悬停效果，避免手机端粘滞 */
+        @media (hover: hover) {
+            .audio-card:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-hover);
+            }
         }
 
         .audio-cover {
-            width: 80px;
-            height: 80px;
-            border-radius: 8px;
+            width: clamp(64px, 12vw, 90px);
+            height: clamp(64px, 12vw, 90px);
+            border-radius: 10px;
             object-fit: cover;
             flex-shrink: 0;
             background: #f1f5f9;
@@ -125,24 +153,26 @@
 
         .audio-info {
             flex: 1;
-            min-width: 0;
+            min-width: 0; /* 关键：让内部元素在 flex 中允许收缩 */
+            display: flex;
+            flex-direction: column;
         }
 
         .audio-title {
-            font-size: 1.25rem;
+            font-size: clamp(1rem, 3.5vw, 1.2rem);
             font-weight: 600;
-            margin-bottom: 4px;
             color: var(--text);
+            line-height: 1.35;
+            margin-bottom: 4px;
+            word-break: break-word;
         }
 
-        .audio-description {
-            color: var(--text-light);
-            font-size: 0.95rem;
-            margin-bottom: 10px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+        .audio-meta {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
         }
 
         .audio-category {
@@ -153,14 +183,27 @@
             color: var(--primary);
             padding: 2px 10px;
             border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .audio-description {
+            color: var(--text-light);
+            font-size: clamp(0.8rem, 2.6vw, 0.92rem);
             margin-bottom: 10px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            word-break: break-word;
         }
 
         audio {
             width: 100%;
             height: 40px;
+            margin-top: auto;
         }
 
+        /* ========== 空状态 ========== */
         .empty-message {
             text-align: center;
             padding: 40px 20px;
@@ -170,16 +213,84 @@
             border: 1px dashed var(--border);
         }
 
+        /* ============================================================
+           手机端（<= 600px）：封面变成全宽横幅，上下布局
+           ============================================================ */
         @media (max-width: 600px) {
+            :root {
+                --page-padding: 14px;
+                --gap: 12px;
+            }
+
+            .controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .category-select {
+                width: 100%;
+                min-width: 0;
+            }
+
             .audio-card {
                 flex-direction: column;
+                padding: 0;
+                gap: 0;
             }
+
             .audio-cover {
                 width: 100%;
                 height: 160px;
+                border-radius: 12px 12px 0 0;
+                object-fit: cover;
+            }
+
+            .audio-info {
+                padding: 14px;
+                gap: 4px;
+            }
+
+            .audio-title {
+                margin-bottom: 2px;
+            }
+        }
+
+        /* ============================================================
+           超小屏（<= 360px）：进一步压缩
+           ============================================================ */
+        @media (max-width: 360px) {
+            header h1 {
+                font-size: 1.35rem;
+            }
+            .audio-cover {
+                height: 130px;
+            }
+            audio {
+                height: 36px;
+            }
+        }
+
+        /* ============================================================
+           大屏（>= 1200px）：可以放更多留白
+           ============================================================ */
+        @media (min-width: 1200px) {
+            :root {
+                --page-padding: 40px;
+            }
+            .container {
+                max-width: 1000px;
+            }
+        }
+
+        /* ============================================================
+           横屏手机（高度小）：减少头部间距
+           ============================================================ */
+        @media (max-height: 500px) and (orientation: landscape) {
+            header {
+                margin-bottom: 14px;
             }
             header h1 {
-                font-size: 2rem;
+                font-size: 1.4rem;
             }
         }
     </style>
@@ -192,7 +303,7 @@
         </header>
 
         <div class="controls">
-            <input type="text" id="searchInput" class="search-box" placeholder="搜索音频标题或描述...">
+            <input type="text" id="searchInput" class="search-box" placeholder="搜索音频标题或描述..." inputmode="search">
             <select id="categorySelect" class="category-select">
                 <option value="">全部分类</option>
             </select>
@@ -218,9 +329,20 @@
                 renderAudios(allAudios);
                 populateCategories(allAudios);
             } catch (error) {
-                audioListEl.innerHTML = `<div class="empty-message">⚠️ 数据加载失败，请确保 data.json 文件与 index.html 在同一目录下。</div>`;
+                audioListEl.innerHTML = `<div class="empty-message">⚠️ 数据加载失败，请确保 data.json 与 index.html 在同一目录下。</div>`;
                 console.error('加载数据出错:', error);
             }
+        }
+
+        // 简单的 HTML 转义，避免数据中的特殊字符破坏结构
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
 
         // 渲染音频列表
@@ -232,12 +354,14 @@
 
             audioListEl.innerHTML = audios.map(audio => `
                 <div class="audio-card">
-                    ${audio.cover ? `<img class="audio-cover" src="${audio.cover}" alt="${audio.title} 封面" loading="lazy" onerror="this.style.display='none'">` : ''}
+                    ${audio.cover ? `<img class="audio-cover" src="${escapeHtml(audio.cover)}" alt="${escapeHtml(audio.title)} 封面" loading="lazy" onerror="this.style.display='none'">` : ''}
                     <div class="audio-info">
-                        <div class="audio-title">${audio.title}</div>
-                        ${audio.category ? `<span class="audio-category">${audio.category}</span>` : ''}
-                        ${audio.description ? `<p class="audio-description">${audio.description}</p>` : ''}
-                        <audio controls preload="none" src="${audio.url}"></audio>
+                        <div class="audio-title">${escapeHtml(audio.title)}</div>
+                        <div class="audio-meta">
+                            ${audio.category ? `<span class="audio-category">${escapeHtml(audio.category)}</span>` : ''}
+                        </div>
+                        ${audio.description ? `<p class="audio-description">${escapeHtml(audio.description)}</p>` : ''}
+                        <audio controls preload="none" src="${escapeHtml(audio.url)}"></audio>
                     </div>
                 </div>
             `).join('');
@@ -247,28 +371,28 @@
         function populateCategories(audios) {
             const categories = [...new Set(audios.map(item => item.category).filter(Boolean))];
             categorySelect.innerHTML = '<option value="">全部分类</option>' +
-                categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+                categories.map(cat => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join('');
         }
 
-        // 搜索事件
-        searchInput.addEventListener('input', function() {
-            const keyword = this.value.toLowerCase().trim();
+        // 搜索 + 分类联合筛选
+        function applyFilter() {
+            const keyword = searchInput.value.toLowerCase().trim();
+            const cat = categorySelect.value;
+
             const filtered = allAudios.filter(audio => {
                 const titleMatch = audio.title.toLowerCase().includes(keyword);
                 const descMatch = audio.description ? audio.description.toLowerCase().includes(keyword) : false;
-                return titleMatch || descMatch;
+                const keywordOk = !keyword || titleMatch || descMatch;
+                const catOk = !cat || audio.category === cat;
+                return keywordOk && catOk;
             });
-            renderAudios(filtered);
-        });
 
-        // 分类筛选事件
-        categorySelect.addEventListener('change', function() {
-            const cat = this.value;
-            const filtered = cat ? allAudios.filter(audio => audio.category === cat) : allAudios;
             renderAudios(filtered);
-        });
+        }
 
-        // 启动
+        searchInput.addEventListener('input', applyFilter);
+        categorySelect.addEventListener('change', applyFilter);
+
         loadData();
     </script>
 </body>
