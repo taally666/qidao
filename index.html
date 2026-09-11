@@ -48,7 +48,7 @@
             width: 100%;
         }
 
-        /* ========== 头部（极简） ========== */
+        /* ========== 头部 ========== */
         header {
             margin-bottom: 12px;
             text-align: center;
@@ -62,7 +62,7 @@
         }
 
         header p {
-            display: none; /* 小屏隐藏副标题，节省空间；需要可改为 block */
+            display: none;
         }
 
         /* ========== 控制栏 ========== */
@@ -113,7 +113,6 @@
             gap: 8px;
         }
 
-        /* 卡片：左侧缩略图 + 右侧信息，横向紧凑布局 */
         .audio-card {
             background: var(--card-bg);
             border: 1px solid var(--border);
@@ -152,7 +151,6 @@
             gap: 2px;
         }
 
-        /* 标题 + 分类 同一行 */
         .audio-title-row {
             display: flex;
             align-items: center;
@@ -183,7 +181,6 @@
             flex-shrink: 0;
         }
 
-        /* 描述：单行截断 */
         .audio-description {
             color: var(--text-light);
             font-size: 0.78rem;
@@ -193,7 +190,6 @@
             text-overflow: ellipsis;
         }
 
-        /* 音频控件：紧凑高度 */
         audio {
             width: 100%;
             height: 34px;
@@ -212,9 +208,7 @@
             font-size: 0.9rem;
         }
 
-        /* ============================================================
-           桌面端（>= 700px）：稍微放大一点，但依然紧凑
-           ============================================================ */
+        /* ========== 桌面端 ========== */
         @media (min-width: 700px) {
             body {
                 padding: 20px;
@@ -277,9 +271,7 @@
             }
         }
 
-        /* ============================================================
-           大屏（>= 1200px）：容器放宽，卡片信息更舒展
-           ============================================================ */
+        /* ========== 大屏 ========== */
         @media (min-width: 1200px) {
             .container {
                 max-width: 1000px;
@@ -295,9 +287,7 @@
             }
         }
 
-        /* ============================================================
-           超小屏（<= 360px）：进一步收缩
-           ============================================================ */
+        /* ========== 超小屏 ========== */
         @media (max-width: 360px) {
             body {
                 padding: 10px;
@@ -348,11 +338,32 @@
         const searchInput = document.getElementById('searchInput');
         const categorySelect = document.getElementById('categorySelect');
 
+        // ============ 数据合并：把分类封面/默认描述合并进每个条目 ============
+        function normalizeData(raw) {
+            const defaults = raw.defaults || {};
+            const categories = raw.categories || {};
+            const audios = raw.audios || [];
+
+            return audios.map(item => {
+                const catMeta = categories[item.category] || {};
+                return {
+                    title: item.title || '',
+                    url: item.url || '',
+                    category: item.category || '',
+                    description: item.description || catMeta.defaultDescription || '',
+                    // 优先级：条目自带 > 分类封面 > 全局默认
+                    cover: item.cover || catMeta.cover || defaults.cover || ''
+                };
+            });
+        }
+
+        // ============ 加载数据 ============
         async function loadData() {
             try {
                 const response = await fetch('data.json');
                 if (!response.ok) throw new Error('无法加载 data.json');
-                allAudios = await response.json();
+                const raw = await response.json();
+                allAudios = normalizeData(raw);
                 renderAudios(allAudios);
                 populateCategories(allAudios);
             } catch (error) {
@@ -361,6 +372,7 @@
             }
         }
 
+        // ============ HTML 转义 ============
         function escapeHtml(str) {
             if (!str) return '';
             return String(str)
@@ -371,6 +383,7 @@
                 .replace(/'/g, '&#39;');
         }
 
+        // ============ 渲染列表 ============
         function renderAudios(audios) {
             if (audios.length === 0) {
                 audioListEl.innerHTML = `<div class="empty-message">🔍 没有找到匹配的音频</div>`;
@@ -392,12 +405,14 @@
             `).join('');
         }
 
+        // ============ 填充分类下拉框 ============
         function populateCategories(audios) {
             const categories = [...new Set(audios.map(item => item.category).filter(Boolean))];
             categorySelect.innerHTML = '<option value="">全部</option>' +
                 categories.map(cat => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join('');
         }
 
+        // ============ 搜索 + 分类联合筛选 ============
         function applyFilter() {
             const keyword = searchInput.value.toLowerCase().trim();
             const cat = categorySelect.value;
