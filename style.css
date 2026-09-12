@@ -11,7 +11,7 @@
     --shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     --radius: 8px;
     --row-h: 36px;
-    --player-h: 104px;   /* 播放器变高，两行 */
+    --player-h: 104px;
 }
 
 * {
@@ -177,7 +177,7 @@ header h1 {
 }
 
 /* ============================================================
-   底部迷你播放器（两行布局）
+   底部迷你播放器（两行布局，全端统一）
    ============================================================ */
 .mini-player {
     position: fixed;
@@ -210,7 +210,6 @@ header h1 {
     display: block;
 }
 
-/* 通用按钮 */
 .mp-btn {
     flex-shrink: 0;
     width: 36px;
@@ -237,7 +236,7 @@ header h1 {
 
 .mp-close { color: var(--text-light); }
 
-/* ±15s 按钮 */
+/* ±15s 按钮：手机/桌面均显示在进度条两侧 */
 .mp-skip {
     width: auto;
     min-width: 30px;
@@ -256,8 +255,7 @@ header h1 {
     background: #eef2ff;
 }
 
-/* 默认（手机端）：显示 mobile 组，隐藏 desktop 组 */
-.mp-skip-mobile { display: flex; }
+/* 隐藏桌面专用的那组 ±15s（HTML 中保留但始终不显示） */
 .mp-skip-desktop { display: none; }
 
 /* 倍速按钮 */
@@ -399,8 +397,9 @@ header h1 {
     .audio-title { font-size: 0.92rem; }
     .audio-category { font-size: 0.72rem; }
 
+    /* 桌面：内容居中并限制最大宽度，避免宽屏上拉散 */
     .mini-player {
-        padding: 12px 16px;
+        padding: 12px max(20px, calc((100vw - 1000px) / 2));
         gap: 10px 12px;
         padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
     }
@@ -417,15 +416,11 @@ header h1 {
     }
 
     .mp-skip {
-        min-width: 36px;
-        height: 36px;
+        min-width: 40px;
+        height: 34px;
         font-size: 0.76rem;
         padding: 0 8px;
     }
-
-    /* 桌面端：显示 desktop 组（在播放按钮旁），隐藏 mobile 组 */
-    .mp-skip-mobile { display: none; }
-    .mp-skip-desktop { display: flex; }
 
     .mp-speed {
         min-width: 48px;
