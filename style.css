@@ -106,58 +106,40 @@ header h1 {
 }
 
 /* ============================================================
-   列表：区 + 分集
+   列表：扁平集列表
    ============================================================ */
 .audio-list {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
 }
 
-/* --- 区容器 --- */
-.zone {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    transition: border-color 0.15s;
-}
-
-.zone.open {
-    border-color: #c7d2fe;
-}
-
-/* --- 区头（点击展开/折叠） --- */
-.zone-header {
+.audio-item {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 0 12px;
+    padding: 0 10px;
     height: var(--row-h);
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
     cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
     user-select: none;
-    transition: background 0.12s;
 }
 
-.zone-header:hover {
+.audio-item:hover {
     background: #f8fafc;
 }
 
-.zone-arrow {
-    flex-shrink: 0;
-    color: var(--text-light);
-    transition: transform 0.2s;
-    transform-origin: 50% 50%;
+.audio-item.playing {
+    background: #eef2ff;
+    border-color: #c7d2fe;
 }
 
-.zone.open .zone-arrow {
-    transform: rotate(90deg);
-    color: var(--primary);
-}
-
-.zone-index {
+.audio-index {
     flex-shrink: 0;
-    width: 20px;
+    width: 30px;
     font-size: 0.72rem;
     color: var(--text-light);
     text-align: right;
@@ -165,7 +147,12 @@ header h1 {
     line-height: 1;
 }
 
-.zone-title {
+.audio-item.playing .audio-index {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.audio-title {
     flex: 1;
     min-width: 0;
     font-size: 0.85rem;
@@ -177,87 +164,20 @@ header h1 {
     line-height: 1.2;
 }
 
-.zone.open .zone-title {
+.audio-item.playing .audio-title {
     color: var(--primary);
     font-weight: 600;
 }
 
-.zone-category {
+.audio-category {
     flex-shrink: 0;
     font-size: 0.68rem;
     color: var(--text-light);
     white-space: nowrap;
 }
 
-.zone-count {
-    flex-shrink: 0;
-    font-size: 0.68rem;
-    color: var(--text-light);
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-}
-
-/* --- 分集列表（默认隐藏） --- */
-.zone-tracks {
-    display: none;
-    padding: 3px 0;
-    background: #fafbfc;
-    border-top: 1px solid var(--border);
-}
-
-.zone.open .zone-tracks {
-    display: block;
-}
-
-/* --- 单集 --- */
-.track {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 12px 0 34px;
-    height: 30px;
-    cursor: pointer;
-    font-size: 0.82rem;
-    color: var(--text);
-    user-select: none;
-    transition: background 0.1s;
-}
-
-.track:hover {
-    background: #f1f5f9;
-}
-
-.track.playing {
-    background: #eef2ff;
-}
-
-.track.playing .track-title {
+.audio-item.playing .audio-category {
     color: var(--primary);
-    font-weight: 600;
-}
-
-.track.playing .track-index {
-    color: var(--primary);
-    font-weight: 600;
-}
-
-.track-index {
-    flex-shrink: 0;
-    width: 26px;
-    font-size: 0.7rem;
-    color: var(--text-light);
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-}
-
-.track-title {
-    flex: 1;
-    min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.2;
 }
 
 /* ============================================================
@@ -283,9 +203,9 @@ header h1 {
     bottom: 0;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
+    gap: 8px;
+    padding: 8px 10px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
     background: #ffffff;
     border-top: 1px solid var(--border);
     box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.08);
@@ -403,6 +323,25 @@ header h1 {
     color: var(--text-light);
 }
 
+/* ±15s 按钮 */
+.mp-skip {
+    width: auto;
+    min-width: 30px;
+    height: 30px;
+    padding: 0 6px;
+    border-radius: 8px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text-light);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.3px;
+}
+
+.mp-skip:hover {
+    color: var(--primary);
+    background: #eef2ff;
+}
+
 .mp-speed {
     width: auto;
     min-width: 44px;
@@ -458,42 +397,31 @@ header h1 {
     }
 
     .audio-list {
-        gap: 6px;
+        gap: 4px;
     }
 
-    .zone-header {
+    .audio-item {
         padding: 0 14px;
         gap: 12px;
+        border-radius: 8px;
     }
 
-    .zone-index {
-        width: 26px;
+    .audio-index {
+        width: 38px;
         font-size: 0.76rem;
     }
 
-    .zone-title {
+    .audio-title {
         font-size: 0.92rem;
     }
 
-    .zone-category,
-    .zone-count {
+    .audio-category {
         font-size: 0.72rem;
     }
 
-    .track {
-        padding: 0 14px 0 40px;
-        height: 34px;
-        font-size: 0.88rem;
-    }
-
-    .track-index {
-        width: 30px;
-        font-size: 0.74rem;
-    }
-
     .mini-player {
-        padding: 12px 20px;
-        gap: 16px;
+        padding: 12px 16px;
+        gap: 12px;
         padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
     }
 
@@ -518,6 +446,13 @@ header h1 {
     .mp-btn {
         width: 44px;
         height: 44px;
+    }
+
+    .mp-skip {
+        min-width: 38px;
+        height: 38px;
+        font-size: 0.78rem;
+        padding: 0 8px;
     }
 
     .mp-speed {
@@ -555,35 +490,28 @@ header h1 {
         padding-bottom: calc(10px + var(--player-h));
     }
 
-    .zone-header {
+    .audio-item {
         padding: 0 8px;
         gap: 6px;
     }
 
-    .zone-title {
-        font-size: 0.8rem;
-    }
-
-    .zone-category,
-    .zone-count {
-        font-size: 0.64rem;
-    }
-
-    .track {
-        padding: 0 8px 0 28px;
-        height: 28px;
-        font-size: 0.78rem;
-    }
-
-    .track-index {
-        width: 22px;
+    .audio-index {
+        width: 26px;
         font-size: 0.66rem;
     }
 
+    .audio-title {
+        font-size: 0.8rem;
+    }
+
+    .audio-category {
+        font-size: 0.64rem;
+    }
+
     .mini-player {
-        gap: 10px;
-        padding: 8px 10px;
-        padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+        gap: 6px;
+        padding: 6px 8px;
+        padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
     }
 
     .mp-cover {
@@ -602,6 +530,13 @@ header h1 {
     .mp-btn {
         width: 36px;
         height: 36px;
+    }
+
+    .mp-skip {
+        min-width: 26px;
+        height: 26px;
+        font-size: 0.6rem;
+        padding: 0 4px;
     }
 
     .mp-speed {
