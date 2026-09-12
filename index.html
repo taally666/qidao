@@ -27,25 +27,27 @@
     <div class="mini-player" id="miniPlayer">
         <img class="mp-cover" id="mpCover" src="" alt="">
         <button class="mp-btn mp-play" id="mpPlayBtn" aria-label="播放/暂停"></button>
-        <button class="mp-btn mp-skip" id="mpRewindBtn" aria-label="后退15秒">-15</button>
-        <button class="mp-btn mp-skip" id="mpForwardBtn" aria-label="前进15秒">+15</button>
-        <div class="mp-info">
-            <div class="mp-title" id="mpTitle">—</div>
-            <div class="mp-progress-row">
-                <div class="mp-progress-wrap" id="mpProgressWrap">
-                    <div class="mp-progress-bar" id="mpProgressBar"></div>
-                </div>
-                <div class="mp-time" id="mpTime">0:00 / 0:00</div>
-            </div>
+        <button class="mp-btn mp-skip mp-skip-desktop" data-skip="-15" aria-label="后退15秒">-15</button>
+        <button class="mp-btn mp-skip mp-skip-desktop" data-skip="15" aria-label="前进15秒">+15</button>
+        <div class="mp-title" id="mpTitle">
+            <span class="mp-title-inner" id="mpTitleInner">—</span>
         </div>
         <button class="mp-btn mp-speed" id="mpSpeedBtn" aria-label="播放速度">1x</button>
         <button class="mp-btn mp-close" id="mpCloseBtn" aria-label="关闭"></button>
+        <div class="mp-progress-row">
+            <button class="mp-btn mp-skip mp-skip-mobile" data-skip="-15" aria-label="后退15秒">-15</button>
+            <div class="mp-progress-wrap" id="mpProgressWrap">
+                <div class="mp-progress-bar" id="mpProgressBar"></div>
+            </div>
+            <div class="mp-time" id="mpTime">0:00 / 0:00</div>
+            <button class="mp-btn mp-skip mp-skip-mobile" data-skip="15" aria-label="前进15秒">+15</button>
+        </div>
     </div>
 
     <script>
         // ========== 全局状态 ==========
-        let allTracks = [];      // 扁平化后的所有集
-        let currentIdx = -1;     // 当前播放的集索引
+        let allTracks = [];
+        let currentIdx = -1;
         const audio = new Audio();
         audio.preload = 'none';
 
@@ -59,13 +61,12 @@
         const miniPlayer = document.getElementById('miniPlayer');
         const mpCover = document.getElementById('mpCover');
         const mpTitle = document.getElementById('mpTitle');
+        const mpTitleInner = document.getElementById('mpTitleInner');
         const mpProgressWrap = document.getElementById('mpProgressWrap');
         const mpProgressBar = document.getElementById('mpProgressBar');
         const mpTime = document.getElementById('mpTime');
         const mpSpeedBtn = document.getElementById('mpSpeedBtn');
         const mpPlayBtn = document.getElementById('mpPlayBtn');
-        const mpRewindBtn = document.getElementById('mpRewindBtn');
-        const mpForwardBtn = document.getElementById('mpForwardBtn');
         const mpCloseBtn = document.getElementById('mpCloseBtn');
 
         // ========== SVG 图标 ==========
@@ -98,6 +99,35 @@
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#39;');
         }
+
+        // ========== 标题自动滚动 ==========
+        let _titleScrollTimer = null;
+        function setupTitleScroll() {
+            const inner = mpTitleInner;
+            // 重置
+            inner.classList.remove('scrolling');
+            inner.style.removeProperty('--scroll-dist');
+            inner.style.removeProperty('--scroll-duration');
+            // 强制 reflow，确保重新计算
+            void inner.offsetWidth;
+
+            const innerW = inner.scrollWidth;
+            const outerW = mpTitle.clientWidth;
+            const overflow = innerW - outerW;
+
+            if (overflow > 6) {
+                // 溢出越多，滚动越慢；控制在 4~14 秒
+                const duration = Math.max(4, Math.min(14, overflow / 18));
+                inner.style.setProperty('--scroll-dist', `-${overflow + 6}px`);
+                inner.style.setProperty('--scroll-duration', `${duration}s`);
+                inner.classList.add('scrolling');
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            clearTimeout(_titleScrollTimer);
+            _titleScrollTimer = setTimeout(setupTitleScroll, 150);
+        });
 
         // ========== 扁平化数据 ==========
         function flattenData(raw) {
@@ -196,7 +226,6 @@
             const track = allTracks[idx];
             if (!track) return;
 
-            // 同一条：切换播放/暂停
             if (idx === currentIdx) {
                 if (audio.paused) {
                     audio.play().catch(console.error);
@@ -211,7 +240,6 @@
             currentIdx = idx;
 
             if (sameFile) {
-                // 同一个合并文件：直接跳转，无需重新加载
                 audio.currentTime = track.start;
                 applySpeed();
                 if (audio.paused) {
@@ -221,7 +249,6 @@
                 updateProgress();
                 updateHighlight();
             } else {
-                // 不同合并文件：重新加载
                 audio.src = track.url;
                 applySpeed();
                 const onLoaded = () => {
@@ -229,7 +256,7 @@
                     audio.currentTime = track.start;
                     audio.play().catch(err => {
                         console.error('播放失败:', err);
-                        mpTitle.textContent = '播放失败：' + track.title;
+                        mpTitleInner.textContent = '播放失败：' + track.title;
                     });
                 };
                 audio.addEventListener('loadedmetadata', onLoaded);
@@ -260,10 +287,13 @@
             } else {
                 mpCover.style.display = 'none';
             }
-            mpTitle.textContent = track.title || '—';
+            mpTitleInner.textContent = track.title || '—';
             mpProgressBar.style.width = '0%';
             mpTime.textContent = '0:00 / 0:00';
             miniPlayer.classList.add('active');
+
+            // 等待布局完成后重新计算标题滚动
+            requestAnimationFrame(() => requestAnimationFrame(setupTitleScroll));
         }
 
         // ========== 进度条与时间（按当前集计算） ==========
@@ -305,19 +335,14 @@
             }
         });
 
-        // 后退 15 秒
-        mpRewindBtn.addEventListener('click', () => {
+        // ±15s 按钮：桌面/手机两组，统一用 data-skip 处理
+        miniPlayer.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-skip]');
+            if (!btn) return;
             if (currentIdx < 0) return;
+            const delta = parseInt(btn.dataset.skip, 10);
             const track = allTracks[currentIdx];
-            audio.currentTime = Math.max(track.start, audio.currentTime - 15);
-            updateProgress();
-        });
-
-        // 前进 15 秒
-        mpForwardBtn.addEventListener('click', () => {
-            if (currentIdx < 0) return;
-            const track = allTracks[currentIdx];
-            audio.currentTime = Math.min(track.end, audio.currentTime + 15);
+            audio.currentTime = Math.max(track.start, Math.min(track.end, audio.currentTime + delta));
             updateProgress();
         });
 
@@ -329,7 +354,6 @@
             updateSpeedBtn();
         });
 
-        // 点击进度条：在当前集内跳转
         mpProgressWrap.addEventListener('click', (e) => {
             if (currentIdx < 0) return;
             const track = allTracks[currentIdx];
@@ -356,7 +380,6 @@
 
             updateProgress();
 
-            // 自动跳下一集
             if (!audio.paused && audio.currentTime >= track.end - 0.05) {
                 if (currentIdx + 1 < allTracks.length) {
                     playTrack(currentIdx + 1);
