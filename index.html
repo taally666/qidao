@@ -42,8 +42,10 @@
 
     <script>
         // ========== 全局状态 ==========
-        let allAudios = [];
-        let currentIndex = -1;
+        let allAudios = [];          // 每个元素是一个"区"
+        let currentZone = -1;        // 当前播放区索引
+        let currentTrack = -1;       // 当前播放分集索引
+        let openZones = new Set();   // 已展开的区索引
         const audio = new Audio();
         audio.preload = 'none';
 
@@ -68,6 +70,7 @@
         const ICON_PLAY = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
         const ICON_PAUSE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
         const ICON_CLOSE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+        const ICON_ARROW = '<svg class="zone-arrow" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M9 6l6 6-6 6z"/></svg>';
 
         mpPlayBtn.innerHTML = ICON_PLAY;
         mpCloseBtn.innerHTML = ICON_CLOSE;
@@ -107,7 +110,8 @@
                     title: item.title || '',
                     url: item.url || '',
                     category: item.category || '',
-                    cover: item.cover || catMeta.cover || defaults.cover || ''
+                    cover: item.cover || catMeta.cover || defaults.cover || '',
+                    tracks: Array.isArray(item.tracks) ? item.tracks : []
                 };
             });
         }
@@ -119,7 +123,7 @@
                 if (!response.ok) throw new Error('无法加载 data.json');
                 const raw = await response.json();
                 allAudios = normalizeData(raw);
-                renderAudios(allAudios);
+                renderList(allAudios);
                 populateCategories(allAudios);
             } catch (error) {
                 audioListEl.innerHTML = `<div class="empty-message">⚠️ 数据加载失败，请确保 data.json 与 index.html 在同一目录下。</div>`;
@@ -127,25 +131,38 @@
             }
         }
 
-        // ========== 渲染列表 ==========
-        function renderAudios(audios) {
+        // ========== 渲染列表（区 + 分集） ==========
+        function renderList(audios) {
             if (audios.length === 0) {
                 audioListEl.innerHTML = `<div class="empty-message">🔍 没有找到匹配的音频</div>`;
                 return;
             }
 
-            audioListEl.innerHTML = audios.map((item, i) => {
-                const idx = allAudios.indexOf(item);
+            audioListEl.innerHTML = audios.map((zone, zi) => {
+                const idx = allAudios.indexOf(zone);
+                const isOpen = openZones.has(idx);
+                const tracksHtml = zone.tracks.map((t, ti) => `
+                    <div class="track" data-zone="${idx}" data-track="${ti}">
+                        <span class="track-index">${ti + 1}</span>
+                        <span class="track-title">${escapeHtml(t.title)}</span>
+                    </div>
+                `).join('');
+
                 return `
-                    <div class="audio-card" data-idx="${idx}">
-                        <span class="audio-index">${i + 1}</span>
-                        <div class="audio-title">${escapeHtml(item.title)}</div>
-                        ${item.category ? `<span class="audio-category">${escapeHtml(item.category)}</span>` : ''}
+                    <div class="zone ${isOpen ? 'open' : ''}" data-zone="${idx}">
+                        <div class="zone-header" data-toggle="${idx}">
+                            ${ICON_ARROW}
+                            <span class="zone-index">${zi + 1}</span>
+                            <span class="zone-title">${escapeHtml(zone.title)}</span>
+                            ${zone.category ? `<span class="zone-category">${escapeHtml(zone.category)}</span>` : ''}
+                            <span class="zone-count">${zone.tracks.length}集</span>
+                        </div>
+                        <div class="zone-tracks">${tracksHtml}</div>
                     </div>
                 `;
             }).join('');
 
-            updateCardHighlight();
+            updateHighlight();
         }
 
         // ========== 填充分类下拉框 ==========
@@ -160,30 +177,59 @@
             const keyword = searchInput.value.toLowerCase().trim();
             const cat = categorySelect.value;
 
-            const filtered = allAudios.filter(item => {
-                const titleMatch = item.title.toLowerCase().includes(keyword);
-                const catOk = !cat || item.category === cat;
-                const keywordOk = !keyword || titleMatch;
-                return keywordOk && catOk;
+            const filtered = allAudios.filter(zone => {
+                const catOk = !cat || zone.category === cat;
+                if (!catOk) return false;
+                if (!keyword) return true;
+
+                // 区标题匹配
+                if (zone.title.toLowerCase().includes(keyword)) return true;
+                // 分集标题匹配
+                return zone.tracks.some(t => t.title.toLowerCase().includes(keyword));
             });
 
-            renderAudios(filtered);
+            // 搜索时自动展开所有匹配的区
+            if (keyword) {
+                filtered.forEach(zone => openZones.add(allAudios.indexOf(zone)));
+            }
+
+            renderList(filtered);
+        }
+
+        // ========== 切换展开/折叠 ==========
+        function toggleZone(zoneIdx) {
+            if (openZones.has(zoneIdx)) {
+                openZones.delete(zoneIdx);
+            } else {
+                openZones.add(zoneIdx);
+            }
+            const zoneEl = document.querySelector(`.zone[data-zone="${zoneIdx}"]`);
+            if (zoneEl) {
+                zoneEl.classList.toggle('open', openZones.has(zoneIdx));
+            }
         }
 
         // ========== 卡片高亮 ==========
-        function updateCardHighlight() {
-            document.querySelectorAll('.audio-card').forEach(card => {
-                const idx = parseInt(card.dataset.idx, 10);
-                card.classList.toggle('playing', idx === currentIndex);
+        function updateHighlight() {
+            document.querySelectorAll('.track').forEach(trackEl => {
+                const zi = parseInt(trackEl.dataset.zone, 10);
+                const ti = parseInt(trackEl.dataset.track, 10);
+                trackEl.classList.toggle('playing', zi === currentZone && ti === currentTrack);
             });
         }
 
-        // ========== 切换播放 ==========
-        function togglePlay(idx) {
-            const item = allAudios[idx];
-            if (!item) return;
+        // ========== 播放某一集 ==========
+        function playTrack(zoneIdx, trackIdx) {
+            const zone = allAudios[zoneIdx];
+            if (!zone) return;
+            const track = zone.tracks[trackIdx];
+            if (!track) return;
 
-            if (idx === currentIndex) {
+            const prevZone = currentZone;
+            const prevTrack = currentTrack;
+
+            // 同一条：切换播放/暂停
+            if (prevZone === zoneIdx && prevTrack === trackIdx) {
                 if (audio.paused) {
                     audio.play().catch(console.error);
                 } else {
@@ -192,15 +238,36 @@
                 return;
             }
 
-            currentIndex = idx;
-            audio.src = item.url;
+            currentZone = zoneIdx;
+            currentTrack = trackIdx;
+
+            // 同一个合并文件：直接跳转，不重新加载
+            if (prevZone === zoneIdx && audio.duration) {
+                audio.currentTime = track.start;
+                if (audio.paused) {
+                    audio.play().catch(console.error);
+                }
+                updateMiniPlayer(zone, track);
+                updateHighlight();
+                return;
+            }
+
+            // 不同合并文件：加载新音频
+            audio.src = zone.url;
             applySpeed();
-            audio.play().catch(err => {
-                console.error('播放失败:', err);
-                mpTitle.textContent = '播放失败：' + item.title;
-            });
-            updateMiniPlayer(item);
-            updateCardHighlight();
+            const onLoaded = () => {
+                audio.removeEventListener('loadedmetadata', onLoaded);
+                audio.currentTime = track.start;
+                audio.play().catch(err => {
+                    console.error('播放失败:', err);
+                    mpTitle.textContent = '播放失败：' + track.title;
+                });
+            };
+            audio.addEventListener('loadedmetadata', onLoaded);
+            audio.load();
+
+            updateMiniPlayer(zone, track);
+            updateHighlight();
         }
 
         // ========== 应用倍速 ==========
@@ -217,20 +284,20 @@
         }
 
         // ========== 更新迷你播放器 ==========
-        function updateMiniPlayer(item) {
-            if (item.cover) {
-                mpCover.src = item.cover;
+        function updateMiniPlayer(zone, track) {
+            if (zone.cover) {
+                mpCover.src = zone.cover;
                 mpCover.style.display = '';
             } else {
                 mpCover.style.display = 'none';
             }
-            mpTitle.textContent = item.title || '—';
+            mpTitle.textContent = track.title || '—';
             mpProgressBar.style.width = '0%';
             mpTime.textContent = '0:00 / 0:00';
             miniPlayer.classList.add('active');
         }
 
-        // ========== 时长显示 ==========
+        // ========== 时长显示（合并文件的总时长） ==========
         function updateTimeDisplay() {
             const cur = formatTime(audio.currentTime);
             const total = (audio.duration && isFinite(audio.duration)) ? formatTime(audio.duration) : '--:--';
@@ -242,17 +309,29 @@
             audio.pause();
             audio.removeAttribute('src');
             audio.load();
-            currentIndex = -1;
+            currentZone = -1;
+            currentTrack = -1;
             miniPlayer.classList.remove('active');
-            updateCardHighlight();
+            updateHighlight();
         }
 
         // ========== 事件绑定 ==========
+
+        // 点击列表：判断点的是"区头"还是"分集"
         audioListEl.addEventListener('click', (e) => {
-            const card = e.target.closest('.audio-card');
-            if (!card) return;
-            const idx = parseInt(card.dataset.idx, 10);
-            togglePlay(idx);
+            const trackEl = e.target.closest('.track');
+            if (trackEl) {
+                const zi = parseInt(trackEl.dataset.zone, 10);
+                const ti = parseInt(trackEl.dataset.track, 10);
+                playTrack(zi, ti);
+                return;
+            }
+
+            const headerEl = e.target.closest('.zone-header');
+            if (headerEl) {
+                const zi = parseInt(headerEl.dataset.toggle, 10);
+                toggleZone(zi);
+            }
         });
 
         mpPlayBtn.addEventListener('click', () => {
@@ -272,11 +351,24 @@
             updateSpeedBtn();
         });
 
+        // 点击进度条：在合并文件内跳转，并自动同步当前分集
         mpProgressWrap.addEventListener('click', (e) => {
             if (!audio.duration || !isFinite(audio.duration)) return;
             const rect = mpProgressWrap.getBoundingClientRect();
             const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-            audio.currentTime = pct * audio.duration;
+            const newTime = pct * audio.duration;
+
+            // 找到 newTime 落在哪一集
+            if (currentZone >= 0) {
+                const zone = allAudios[currentZone];
+                const ti = zone.tracks.findIndex(t => newTime >= t.start && newTime < t.end);
+                if (ti >= 0) {
+                    currentTrack = ti;
+                    updateMiniPlayer(zone, zone.tracks[ti]);
+                    updateHighlight();
+                }
+            }
+            audio.currentTime = newTime;
         });
 
         audio.addEventListener('play', () => {
@@ -288,11 +380,28 @@
         });
 
         audio.addEventListener('timeupdate', () => {
+            // 进度条 + 时间
             if (audio.duration && isFinite(audio.duration)) {
                 const pct = (audio.currentTime / audio.duration) * 100;
                 mpProgressBar.style.width = pct + '%';
             }
             updateTimeDisplay();
+
+            // 自动切换分集
+            if (currentZone >= 0 && currentTrack >= 0 && !audio.paused) {
+                const zone = allAudios[currentZone];
+                const track = zone.tracks[currentTrack];
+                if (track && audio.currentTime >= track.end) {
+                    // 播放下一集
+                    if (currentTrack + 1 < zone.tracks.length) {
+                        playTrack(currentZone, currentTrack + 1);
+                    } else {
+                        // 本区最后一集：暂停
+                        audio.pause();
+                        audio.currentTime = track.end;
+                    }
+                }
+            }
         });
 
         audio.addEventListener('loadedmetadata', updateTimeDisplay);
