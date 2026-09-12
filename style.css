@@ -93,7 +93,7 @@ header h1 {
 .category-select:focus { outline: none; border-color: var(--primary); }
 
 /* ============================================================
-   列表：扁平集列表
+   列表
    ============================================================ */
 .audio-list {
     display: flex;
@@ -177,7 +177,7 @@ header h1 {
 }
 
 /* ============================================================
-   底部迷你播放器（两行布局，全端统一）
+   迷你播放器（手机端基础样式，桌面端在媒体查询里覆盖）
    ============================================================ */
 .mini-player {
     position: fixed;
@@ -236,7 +236,6 @@ header h1 {
 
 .mp-close { color: var(--text-light); }
 
-/* ±15s 按钮：手机/桌面均显示在进度条两侧 */
 .mp-skip {
     width: auto;
     min-width: 30px;
@@ -255,10 +254,9 @@ header h1 {
     background: #eef2ff;
 }
 
-/* 隐藏桌面专用的那组 ±15s（HTML 中保留但始终不显示） */
+/* 手机端：桌面专用的 ±15 按钮隐藏 */
 .mp-skip-desktop { display: none; }
 
-/* 倍速按钮 */
 .mp-speed {
     width: auto;
     min-width: 40px;
@@ -363,7 +361,7 @@ header h1 {
 @media (min-width: 700px) {
     :root {
         --row-h: 40px;
-        --player-h: 118px;
+        --player-h: 124px;
     }
 
     body {
@@ -371,24 +369,24 @@ header h1 {
         padding-bottom: calc(20px + var(--player-h));
     }
 
-    header { margin-bottom: 12px; }
-    header h1 { font-size: 1.35rem; }
+    header { margin-bottom: 14px; }
+    header h1 { font-size: 1.4rem; }
 
     .controls {
-        margin-bottom: 10px;
+        margin-bottom: 12px;
         gap: 10px;
     }
 
     .search-box,
     .category-select {
-        padding: 8px 14px;
+        padding: 9px 14px;
         font-size: 0.92rem;
     }
 
     .audio-list { gap: 4px; }
 
     .audio-item {
-        padding: 0 14px;
+        padding: 0 16px;
         gap: 12px;
         border-radius: 8px;
     }
@@ -397,44 +395,82 @@ header h1 {
     .audio-title { font-size: 0.92rem; }
     .audio-category { font-size: 0.72rem; }
 
-    /* 桌面：内容居中并限制最大宽度，避免宽屏上拉散 */
+    /* ---------- 播放器：更精致的桌面布局 ---------- */
     .mini-player {
-        padding: 12px max(20px, calc((100vw - 1000px) / 2));
-        gap: 10px 12px;
-        padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+        padding: 14px max(24px, calc((100vw - 1000px) / 2));
+        gap: 10px 14px;
+        padding-bottom: max(14px, env(safe-area-inset-bottom, 0px));
     }
 
     .mp-cover {
-        width: 64px;
-        height: 64px;
-        border-radius: 12px;
+        width: 60px;
+        height: 60px;
+        border-radius: 10px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
     }
 
     .mp-btn {
-        width: 42px;
-        height: 42px;
+        width: 40px;
+        height: 40px;
     }
 
+    .mp-play {
+        width: 46px;
+        height: 46px;
+        box-shadow: 0 3px 10px rgba(79, 70, 229, 0.28);
+    }
+    .mp-play:hover {
+        box-shadow: 0 4px 14px rgba(67, 56, 202, 0.35);
+    }
+
+    /* 桌面端 ±15s：右侧矩形按钮，浅灰底 */
     .mp-skip {
-        min-width: 40px;
+        min-width: 42px;
         height: 34px;
-        font-size: 0.76rem;
-        padding: 0 8px;
+        padding: 0 10px;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        background: #f1f5f9;
+        color: var(--text);
+        letter-spacing: -0.2px;
+    }
+    .mp-skip:hover {
+        background: #eef2ff;
+        color: var(--primary);
     }
 
     .mp-speed {
-        min-width: 48px;
-        height: 42px;
+        min-width: 52px;
+        height: 38px;
+        padding: 0 12px;
+        border-radius: 8px;
         font-size: 0.85rem;
     }
 
     .mp-title {
         font-size: 1rem;
+        font-weight: 600;
     }
 
     .mp-time {
-        font-size: 0.78rem;
+        font-size: 0.8rem;
     }
+
+    /* 进度条加高，视觉更醒目 */
+    .mp-progress-row {
+        gap: 12px;
+    }
+    .mp-progress-wrap {
+        height: 6px;
+        border-radius: 3px;
+    }
+    .mp-progress-bar {
+        border-radius: 3px;
+    }
+
+    /* 桌面端切换 ±15s 分组：显示标题后那组，隐藏进度条行内的 */
+    .mp-skip-desktop { display: flex; }
+    .mp-skip-mobile { display: none; }
 }
 
 /* ============================================================
@@ -444,8 +480,9 @@ header h1 {
     .container { max-width: 1000px; }
 
     .mp-cover {
-        width: 72px;
-        height: 72px;
+        width: 68px;
+        height: 68px;
+        border-radius: 12px;
     }
 }
 
@@ -478,30 +515,10 @@ header h1 {
         padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
     }
 
-    .mp-cover {
-        width: 38px;
-        height: 38px;
-        border-radius: 6px;
-    }
-
-    .mp-btn {
-        width: 32px;
-        height: 32px;
-    }
-
-    .mp-skip {
-        min-width: 26px;
-        height: 26px;
-        font-size: 0.6rem;
-        padding: 0 4px;
-    }
-
-    .mp-speed {
-        min-width: 36px;
-        height: 32px;
-        font-size: 0.72rem;
-        padding: 0 6px;
-    }
+    .mp-cover { width: 38px; height: 38px; border-radius: 6px; }
+    .mp-btn { width: 32px; height: 32px; }
+    .mp-skip { min-width: 26px; height: 26px; font-size: 0.6rem; padding: 0 4px; }
+    .mp-speed { min-width: 36px; height: 32px; font-size: 0.72rem; padding: 0 6px; }
 
     .mp-title { font-size: 0.8rem; }
     .mp-time { font-size: 0.62rem; }
