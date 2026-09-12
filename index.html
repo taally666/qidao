@@ -27,6 +27,8 @@
     <div class="mini-player" id="miniPlayer">
         <img class="mp-cover" id="mpCover" src="" alt="">
         <button class="mp-btn mp-play" id="mpPlayBtn" aria-label="播放/暂停"></button>
+        <button class="mp-btn mp-skip" id="mpRewindBtn" aria-label="后退15秒">-15</button>
+        <button class="mp-btn mp-skip" id="mpForwardBtn" aria-label="前进15秒">+15</button>
         <div class="mp-info">
             <div class="mp-title" id="mpTitle">—</div>
             <div class="mp-progress-row">
@@ -42,10 +44,8 @@
 
     <script>
         // ========== 全局状态 ==========
-        let allAudios = [];          // 每个元素是一个"区"
-        let currentZone = -1;        // 当前播放区索引
-        let currentTrack = -1;       // 当前播放分集索引
-        let openZones = new Set();   // 已展开的区索引
+        let allTracks = [];      // 扁平化后的所有集
+        let currentIdx = -1;     // 当前播放的集索引
         const audio = new Audio();
         audio.preload = 'none';
 
@@ -64,13 +64,14 @@
         const mpTime = document.getElementById('mpTime');
         const mpSpeedBtn = document.getElementById('mpSpeedBtn');
         const mpPlayBtn = document.getElementById('mpPlayBtn');
+        const mpRewindBtn = document.getElementById('mpRewindBtn');
+        const mpForwardBtn = document.getElementById('mpForwardBtn');
         const mpCloseBtn = document.getElementById('mpCloseBtn');
 
         // ========== SVG 图标 ==========
         const ICON_PLAY = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
         const ICON_PAUSE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
         const ICON_CLOSE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
-        const ICON_ARROW = '<svg class="zone-arrow" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M9 6l6 6-6 6z"/></svg>';
 
         mpPlayBtn.innerHTML = ICON_PLAY;
         mpCloseBtn.innerHTML = ICON_CLOSE;
@@ -98,22 +99,31 @@
                 .replace(/'/g, '&#39;');
         }
 
-        // ========== 数据合并 ==========
-        function normalizeData(raw) {
+        // ========== 扁平化数据 ==========
+        function flattenData(raw) {
             const defaults = raw.defaults || {};
             const categories = raw.categories || {};
             const audios = raw.audios || [];
+            const flat = [];
 
-            return audios.map(item => {
-                const catMeta = categories[item.category] || {};
-                return {
-                    title: item.title || '',
-                    url: item.url || '',
-                    category: item.category || '',
-                    cover: item.cover || catMeta.cover || defaults.cover || '',
-                    tracks: Array.isArray(item.tracks) ? item.tracks : []
-                };
+            audios.forEach(zone => {
+                const catMeta = categories[zone.category] || {};
+                const cover = zone.cover || catMeta.cover || defaults.cover || '';
+                const tracks = Array.isArray(zone.tracks) ? zone.tracks : [];
+                tracks.forEach(t => {
+                    flat.push({
+                        title: t.title || '',
+                        url: zone.url || '',
+                        start: Number(t.start) || 0,
+                        end: Number(t.end) || 0,
+                        category: zone.category || '',
+                        cover: cover,
+                    });
+                });
             });
+
+            flat.forEach((t, i) => { t._idx = i; });
+            return flat;
         }
 
         // ========== 加载数据 ==========
@@ -122,42 +132,28 @@
                 const response = await fetch('data.json');
                 if (!response.ok) throw new Error('无法加载 data.json');
                 const raw = await response.json();
-                allAudios = normalizeData(raw);
-                renderList(allAudios);
-                populateCategories(allAudios);
+                allTracks = flattenData(raw);
+                renderList(allTracks);
+                populateCategories(allTracks);
             } catch (error) {
                 audioListEl.innerHTML = `<div class="empty-message">⚠️ 数据加载失败，请确保 data.json 与 index.html 在同一目录下。</div>`;
                 console.error(error);
             }
         }
 
-        // ========== 渲染列表（区 + 分集） ==========
-        function renderList(audios) {
-            if (audios.length === 0) {
+        // ========== 渲染列表 ==========
+        function renderList(tracks) {
+            if (tracks.length === 0) {
                 audioListEl.innerHTML = `<div class="empty-message">🔍 没有找到匹配的音频</div>`;
                 return;
             }
 
-            audioListEl.innerHTML = audios.map((zone, zi) => {
-                const idx = allAudios.indexOf(zone);
-                const isOpen = openZones.has(idx);
-                const tracksHtml = zone.tracks.map((t, ti) => `
-                    <div class="track" data-zone="${idx}" data-track="${ti}">
-                        <span class="track-index">${ti + 1}</span>
-                        <span class="track-title">${escapeHtml(t.title)}</span>
-                    </div>
-                `).join('');
-
+            audioListEl.innerHTML = tracks.map((t, i) => {
                 return `
-                    <div class="zone ${isOpen ? 'open' : ''}" data-zone="${idx}">
-                        <div class="zone-header" data-toggle="${idx}">
-                            ${ICON_ARROW}
-                            <span class="zone-index">${zi + 1}</span>
-                            <span class="zone-title">${escapeHtml(zone.title)}</span>
-                            ${zone.category ? `<span class="zone-category">${escapeHtml(zone.category)}</span>` : ''}
-                            <span class="zone-count">${zone.tracks.length}集</span>
-                        </div>
-                        <div class="zone-tracks">${tracksHtml}</div>
+                    <div class="audio-item" data-idx="${t._idx}">
+                        <span class="audio-index">${i + 1}</span>
+                        <span class="audio-title">${escapeHtml(t.title)}</span>
+                        ${t.category ? `<span class="audio-category">${escapeHtml(t.category)}</span>` : ''}
                     </div>
                 `;
             }).join('');
@@ -166,8 +162,8 @@
         }
 
         // ========== 填充分类下拉框 ==========
-        function populateCategories(audios) {
-            const categories = [...new Set(audios.map(item => item.category).filter(Boolean))];
+        function populateCategories(tracks) {
+            const categories = [...new Set(tracks.map(item => item.category).filter(Boolean))];
             categorySelect.innerHTML = '<option value="">全部</option>' +
                 categories.map(cat => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join('');
         }
@@ -177,59 +173,31 @@
             const keyword = searchInput.value.toLowerCase().trim();
             const cat = categorySelect.value;
 
-            const filtered = allAudios.filter(zone => {
-                const catOk = !cat || zone.category === cat;
-                if (!catOk) return false;
-                if (!keyword) return true;
-
-                // 区标题匹配
-                if (zone.title.toLowerCase().includes(keyword)) return true;
-                // 分集标题匹配
-                return zone.tracks.some(t => t.title.toLowerCase().includes(keyword));
+            const filtered = allTracks.filter(item => {
+                const titleMatch = item.title.toLowerCase().includes(keyword);
+                const catOk = !cat || item.category === cat;
+                const keywordOk = !keyword || titleMatch;
+                return keywordOk && catOk;
             });
-
-            // 搜索时自动展开所有匹配的区
-            if (keyword) {
-                filtered.forEach(zone => openZones.add(allAudios.indexOf(zone)));
-            }
 
             renderList(filtered);
         }
 
-        // ========== 切换展开/折叠 ==========
-        function toggleZone(zoneIdx) {
-            if (openZones.has(zoneIdx)) {
-                openZones.delete(zoneIdx);
-            } else {
-                openZones.add(zoneIdx);
-            }
-            const zoneEl = document.querySelector(`.zone[data-zone="${zoneIdx}"]`);
-            if (zoneEl) {
-                zoneEl.classList.toggle('open', openZones.has(zoneIdx));
-            }
-        }
-
-        // ========== 卡片高亮 ==========
+        // ========== 高亮 ==========
         function updateHighlight() {
-            document.querySelectorAll('.track').forEach(trackEl => {
-                const zi = parseInt(trackEl.dataset.zone, 10);
-                const ti = parseInt(trackEl.dataset.track, 10);
-                trackEl.classList.toggle('playing', zi === currentZone && ti === currentTrack);
+            document.querySelectorAll('.audio-item').forEach(el => {
+                const idx = parseInt(el.dataset.idx, 10);
+                el.classList.toggle('playing', idx === currentIdx);
             });
         }
 
         // ========== 播放某一集 ==========
-        function playTrack(zoneIdx, trackIdx) {
-            const zone = allAudios[zoneIdx];
-            if (!zone) return;
-            const track = zone.tracks[trackIdx];
+        function playTrack(idx) {
+            const track = allTracks[idx];
             if (!track) return;
 
-            const prevZone = currentZone;
-            const prevTrack = currentTrack;
-
             // 同一条：切换播放/暂停
-            if (prevZone === zoneIdx && prevTrack === trackIdx) {
+            if (idx === currentIdx) {
                 if (audio.paused) {
                     audio.play().catch(console.error);
                 } else {
@@ -238,36 +206,37 @@
                 return;
             }
 
-            currentZone = zoneIdx;
-            currentTrack = trackIdx;
+            const prevTrack = currentIdx >= 0 ? allTracks[currentIdx] : null;
+            const sameFile = prevTrack && prevTrack.url === track.url && audio.src;
+            currentIdx = idx;
 
-            // 同一个合并文件：直接跳转，不重新加载
-            if (prevZone === zoneIdx && audio.duration) {
+            if (sameFile) {
+                // 同一个合并文件：直接跳转，无需重新加载
                 audio.currentTime = track.start;
+                applySpeed();
                 if (audio.paused) {
                     audio.play().catch(console.error);
                 }
-                updateMiniPlayer(zone, track);
+                updateMiniPlayer(track);
+                updateProgress();
                 updateHighlight();
-                return;
+            } else {
+                // 不同合并文件：重新加载
+                audio.src = track.url;
+                applySpeed();
+                const onLoaded = () => {
+                    audio.removeEventListener('loadedmetadata', onLoaded);
+                    audio.currentTime = track.start;
+                    audio.play().catch(err => {
+                        console.error('播放失败:', err);
+                        mpTitle.textContent = '播放失败：' + track.title;
+                    });
+                };
+                audio.addEventListener('loadedmetadata', onLoaded);
+                audio.load();
+                updateMiniPlayer(track);
+                updateHighlight();
             }
-
-            // 不同合并文件：加载新音频
-            audio.src = zone.url;
-            applySpeed();
-            const onLoaded = () => {
-                audio.removeEventListener('loadedmetadata', onLoaded);
-                audio.currentTime = track.start;
-                audio.play().catch(err => {
-                    console.error('播放失败:', err);
-                    mpTitle.textContent = '播放失败：' + track.title;
-                });
-            };
-            audio.addEventListener('loadedmetadata', onLoaded);
-            audio.load();
-
-            updateMiniPlayer(zone, track);
-            updateHighlight();
         }
 
         // ========== 应用倍速 ==========
@@ -284,9 +253,9 @@
         }
 
         // ========== 更新迷你播放器 ==========
-        function updateMiniPlayer(zone, track) {
-            if (zone.cover) {
-                mpCover.src = zone.cover;
+        function updateMiniPlayer(track) {
+            if (track.cover) {
+                mpCover.src = track.cover;
                 mpCover.style.display = '';
             } else {
                 mpCover.style.display = 'none';
@@ -297,11 +266,16 @@
             miniPlayer.classList.add('active');
         }
 
-        // ========== 时长显示（合并文件的总时长） ==========
-        function updateTimeDisplay() {
-            const cur = formatTime(audio.currentTime);
-            const total = (audio.duration && isFinite(audio.duration)) ? formatTime(audio.duration) : '--:--';
-            mpTime.textContent = cur + ' / ' + total;
+        // ========== 进度条与时间（按当前集计算） ==========
+        function updateProgress() {
+            if (currentIdx < 0) return;
+            const track = allTracks[currentIdx];
+            const dur = track.end - track.start;
+            const pos = Math.max(0, Math.min(dur, audio.currentTime - track.start));
+
+            const pct = dur > 0 ? (pos / dur) * 100 : 0;
+            mpProgressBar.style.width = pct + '%';
+            mpTime.textContent = formatTime(pos) + ' / ' + formatTime(dur);
         }
 
         // ========== 关闭播放器 ==========
@@ -309,29 +283,17 @@
             audio.pause();
             audio.removeAttribute('src');
             audio.load();
-            currentZone = -1;
-            currentTrack = -1;
+            currentIdx = -1;
             miniPlayer.classList.remove('active');
             updateHighlight();
         }
 
         // ========== 事件绑定 ==========
-
-        // 点击列表：判断点的是"区头"还是"分集"
         audioListEl.addEventListener('click', (e) => {
-            const trackEl = e.target.closest('.track');
-            if (trackEl) {
-                const zi = parseInt(trackEl.dataset.zone, 10);
-                const ti = parseInt(trackEl.dataset.track, 10);
-                playTrack(zi, ti);
-                return;
-            }
-
-            const headerEl = e.target.closest('.zone-header');
-            if (headerEl) {
-                const zi = parseInt(headerEl.dataset.toggle, 10);
-                toggleZone(zi);
-            }
+            const item = e.target.closest('.audio-item');
+            if (!item) return;
+            const idx = parseInt(item.dataset.idx, 10);
+            playTrack(idx);
         });
 
         mpPlayBtn.addEventListener('click', () => {
@@ -343,6 +305,22 @@
             }
         });
 
+        // 后退 15 秒
+        mpRewindBtn.addEventListener('click', () => {
+            if (currentIdx < 0) return;
+            const track = allTracks[currentIdx];
+            audio.currentTime = Math.max(track.start, audio.currentTime - 15);
+            updateProgress();
+        });
+
+        // 前进 15 秒
+        mpForwardBtn.addEventListener('click', () => {
+            if (currentIdx < 0) return;
+            const track = allTracks[currentIdx];
+            audio.currentTime = Math.min(track.end, audio.currentTime + 15);
+            updateProgress();
+        });
+
         mpCloseBtn.addEventListener('click', closePlayer);
 
         mpSpeedBtn.addEventListener('click', () => {
@@ -351,24 +329,17 @@
             updateSpeedBtn();
         });
 
-        // 点击进度条：在合并文件内跳转，并自动同步当前分集
+        // 点击进度条：在当前集内跳转
         mpProgressWrap.addEventListener('click', (e) => {
-            if (!audio.duration || !isFinite(audio.duration)) return;
+            if (currentIdx < 0) return;
+            const track = allTracks[currentIdx];
+            const dur = track.end - track.start;
+            if (dur <= 0) return;
+
             const rect = mpProgressWrap.getBoundingClientRect();
             const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-            const newTime = pct * audio.duration;
-
-            // 找到 newTime 落在哪一集
-            if (currentZone >= 0) {
-                const zone = allAudios[currentZone];
-                const ti = zone.tracks.findIndex(t => newTime >= t.start && newTime < t.end);
-                if (ti >= 0) {
-                    currentTrack = ti;
-                    updateMiniPlayer(zone, zone.tracks[ti]);
-                    updateHighlight();
-                }
-            }
-            audio.currentTime = newTime;
+            audio.currentTime = track.start + pct * dur;
+            updateProgress();
         });
 
         audio.addEventListener('play', () => {
@@ -380,32 +351,25 @@
         });
 
         audio.addEventListener('timeupdate', () => {
-            // 进度条 + 时间
-            if (audio.duration && isFinite(audio.duration)) {
-                const pct = (audio.currentTime / audio.duration) * 100;
-                mpProgressBar.style.width = pct + '%';
-            }
-            updateTimeDisplay();
+            if (currentIdx < 0) return;
+            const track = allTracks[currentIdx];
 
-            // 自动切换分集
-            if (currentZone >= 0 && currentTrack >= 0 && !audio.paused) {
-                const zone = allAudios[currentZone];
-                const track = zone.tracks[currentTrack];
-                if (track && audio.currentTime >= track.end) {
-                    // 播放下一集
-                    if (currentTrack + 1 < zone.tracks.length) {
-                        playTrack(currentZone, currentTrack + 1);
-                    } else {
-                        // 本区最后一集：暂停
-                        audio.pause();
-                        audio.currentTime = track.end;
-                    }
+            updateProgress();
+
+            // 自动跳下一集
+            if (!audio.paused && audio.currentTime >= track.end - 0.05) {
+                if (currentIdx + 1 < allTracks.length) {
+                    playTrack(currentIdx + 1);
+                } else {
+                    audio.pause();
+                    audio.currentTime = track.end;
+                    updateProgress();
                 }
             }
         });
 
-        audio.addEventListener('loadedmetadata', updateTimeDisplay);
-        audio.addEventListener('durationchange', updateTimeDisplay);
+        audio.addEventListener('loadedmetadata', updateProgress);
+        audio.addEventListener('durationchange', updateProgress);
 
         audio.addEventListener('ended', () => {
             mpPlayBtn.innerHTML = ICON_PLAY;
