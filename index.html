@@ -36,7 +36,7 @@
             padding-top: max(12px, env(safe-area-inset-top));
             padding-left: max(12px, env(safe-area-inset-left));
             padding-right: max(12px, env(safe-area-inset-right));
-            padding-bottom: calc(12px + 64px + env(safe-area-inset-bottom, 0px));
+            padding-bottom: calc(12px + 68px + env(safe-area-inset-bottom, 0px));
             min-height: 100vh;
         }
 
@@ -113,16 +113,13 @@
             user-select: none;
         }
 
-        .audio-card:hover {
-            background: #f8fafc;
-        }
+        .audio-card:hover { background: #f8fafc; }
 
         .audio-card.playing {
             background: #eef2ff;
             border-color: #c7d2fe;
         }
 
-        /* 序号：纯文本 */
         .audio-index {
             flex-shrink: 0;
             width: 24px;
@@ -138,7 +135,6 @@
             font-weight: 600;
         }
 
-        /* 标题：主要信息 */
         .audio-title {
             flex: 1;
             min-width: 0;
@@ -156,7 +152,6 @@
             font-weight: 600;
         }
 
-        /* 分类：右侧纯文本，不用胶囊 */
         .audio-category {
             flex-shrink: 0;
             font-size: 0.72rem;
@@ -229,7 +224,17 @@
             text-overflow: ellipsis;
         }
 
+        /* 进度条行：进度条 + 时长 */
+        .mp-progress-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+
         .mp-progress-wrap {
+            flex: 1;
+            min-width: 0;
             height: 4px;
             background: #e2e8f0;
             border-radius: 2px;
@@ -253,6 +258,17 @@
             pointer-events: none;
         }
 
+        /* 时长：等宽数字，不换行 */
+        .mp-time {
+            flex-shrink: 0;
+            font-size: 0.68rem;
+            color: var(--text-light);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            line-height: 1;
+        }
+
+        /* 通用按钮 */
         .mp-btn {
             flex-shrink: 0;
             width: 36px;
@@ -279,6 +295,29 @@
 
         .mp-close { color: var(--text-light); }
 
+        /* 倍速按钮：显示文字，宽度自适应 */
+        .mp-speed {
+            width: auto;
+            min-width: 40px;
+            height: 36px;
+            padding: 0 8px;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-light);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .mp-speed:hover {
+            color: var(--primary);
+        }
+
+        /* 非 1x 时高亮 */
+        .mp-speed.active {
+            color: var(--primary);
+            background: #eef2ff;
+        }
+
         /* ========== 桌面端 ========== */
         @media (min-width: 700px) {
             :root {
@@ -287,16 +326,11 @@
 
             body {
                 padding: 20px;
-                padding-bottom: calc(20px + 72px);
+                padding-bottom: calc(20px + 76px);
             }
 
-            header {
-                margin-bottom: 14px;
-            }
-
-            header h1 {
-                font-size: 1.4rem;
-            }
+            header { margin-bottom: 14px; }
+            header h1 { font-size: 1.4rem; }
 
             .controls {
                 margin-bottom: 10px;
@@ -321,13 +355,8 @@
                 font-size: 0.82rem;
             }
 
-            .audio-title {
-                font-size: 1rem;
-            }
-
-            .audio-category {
-                font-size: 0.78rem;
-            }
+            .audio-title { font-size: 1rem; }
+            .audio-category { font-size: 0.78rem; }
 
             .mini-player {
                 padding: 10px 20px;
@@ -342,9 +371,17 @@
 
             .mp-title { font-size: 0.92rem; }
 
+            .mp-time { font-size: 0.72rem; }
+
             .mp-btn {
                 width: 40px;
                 height: 40px;
+            }
+
+            .mp-speed {
+                min-width: 44px;
+                height: 40px;
+                font-size: 0.82rem;
             }
         }
 
@@ -359,7 +396,7 @@
                 --row-h: 40px;
             }
 
-            body { padding: 10px; padding-bottom: calc(10px + 60px); }
+            body { padding: 10px; padding-bottom: calc(10px + 64px); }
 
             .audio-card {
                 padding: 0 10px;
@@ -367,17 +404,25 @@
             }
 
             .audio-title { font-size: 0.85rem; }
-
             .audio-category { font-size: 0.68rem; }
 
             .mp-cover {
-                width: 36px;
-                height: 36px;
+                width: 34px;
+                height: 34px;
             }
+
+            .mp-time { font-size: 0.62rem; }
 
             .mp-btn {
                 width: 32px;
                 height: 32px;
+            }
+
+            .mp-speed {
+                min-width: 36px;
+                height: 32px;
+                padding: 0 6px;
+                font-size: 0.72rem;
             }
         }
     </style>
@@ -403,10 +448,14 @@
         <img class="mp-cover" id="mpCover" src="" alt="">
         <div class="mp-info">
             <div class="mp-title" id="mpTitle">—</div>
-            <div class="mp-progress-wrap" id="mpProgressWrap">
-                <div class="mp-progress-bar" id="mpProgressBar"></div>
+            <div class="mp-progress-row">
+                <div class="mp-progress-wrap" id="mpProgressWrap">
+                    <div class="mp-progress-bar" id="mpProgressBar"></div>
+                </div>
+                <div class="mp-time" id="mpTime">0:00 / 0:00</div>
             </div>
         </div>
+        <button class="mp-btn mp-speed" id="mpSpeedBtn" aria-label="播放速度">1x</button>
         <button class="mp-btn mp-play" id="mpPlayBtn" aria-label="播放/暂停"></button>
         <button class="mp-btn mp-close" id="mpCloseBtn" aria-label="关闭"></button>
     </div>
@@ -418,6 +467,10 @@
         const audio = new Audio();
         audio.preload = 'none';
 
+        // 播放速度循环列表
+        const SPEEDS = [1, 1.25, 1.5, 2, 0.75];
+        let speedIndex = 0;
+
         // ========== DOM 引用 ==========
         const audioListEl = document.getElementById('audioList');
         const searchInput = document.getElementById('searchInput');
@@ -427,6 +480,8 @@
         const mpTitle = document.getElementById('mpTitle');
         const mpProgressWrap = document.getElementById('mpProgressWrap');
         const mpProgressBar = document.getElementById('mpProgressBar');
+        const mpTime = document.getElementById('mpTime');
+        const mpSpeedBtn = document.getElementById('mpSpeedBtn');
         const mpPlayBtn = document.getElementById('mpPlayBtn');
         const mpCloseBtn = document.getElementById('mpCloseBtn');
 
@@ -437,6 +492,30 @@
 
         mpPlayBtn.innerHTML = ICON_PLAY;
         mpCloseBtn.innerHTML = ICON_CLOSE;
+
+        // ========== 工具函数 ==========
+        // 时间格式化：秒 → m:ss 或 h:mm:ss
+        function formatTime(sec) {
+            if (sec == null || isNaN(sec) || !isFinite(sec) || sec < 0) return '0:00';
+            const total = Math.floor(sec);
+            const s = total % 60;
+            const m = Math.floor(total / 60) % 60;
+            const h = Math.floor(total / 3600);
+            if (h > 0) {
+                return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+            }
+            return m + ':' + String(s).padStart(2, '0');
+        }
+
+        function escapeHtml(str) {
+            if (str == null) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
 
         // ========== 数据合并 ==========
         function normalizeData(raw) {
@@ -455,17 +534,6 @@
             });
         }
 
-        // ========== HTML 转义 ==========
-        function escapeHtml(str) {
-            if (str == null) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
-
         // ========== 加载数据 ==========
         async function loadData() {
             try {
@@ -481,7 +549,7 @@
             }
         }
 
-        // ========== 渲染列表（纯文本行） ==========
+        // ========== 渲染列表 ==========
         function renderAudios(audios) {
             if (audios.length === 0) {
                 audioListEl.innerHTML = `<div class="empty-message">🔍 没有找到匹配的音频</div>`;
@@ -548,12 +616,28 @@
 
             currentIndex = idx;
             audio.src = item.url;
+            // 设置 src 后 playbackRate 会重置为 defaultPlaybackRate，这里保持当前倍速
+            applySpeed();
             audio.play().catch(err => {
                 console.error('播放失败:', err);
                 mpTitle.textContent = '播放失败：' + item.title;
             });
             updateMiniPlayer(item);
             updateCardHighlight();
+        }
+
+        // ========== 应用当前倍速 ==========
+        function applySpeed() {
+            const rate = SPEEDS[speedIndex];
+            audio.playbackRate = rate;
+            audio.defaultPlaybackRate = rate;
+        }
+
+        // ========== 更新倍速按钮 ==========
+        function updateSpeedBtn() {
+            const rate = SPEEDS[speedIndex];
+            mpSpeedBtn.textContent = rate + 'x';
+            mpSpeedBtn.classList.toggle('active', rate !== 1);
         }
 
         // ========== 更新迷你播放器 ==========
@@ -566,7 +650,15 @@
             }
             mpTitle.textContent = item.title || '—';
             mpProgressBar.style.width = '0%';
+            mpTime.textContent = '0:00 / 0:00';
             miniPlayer.classList.add('active');
+        }
+
+        // ========== 时长显示 ==========
+        function updateTimeDisplay() {
+            const cur = formatTime(audio.currentTime);
+            const total = (audio.duration && isFinite(audio.duration)) ? formatTime(audio.duration) : '--:--';
+            mpTime.textContent = cur + ' / ' + total;
         }
 
         // ========== 关闭播放器 ==========
@@ -598,13 +690,22 @@
 
         mpCloseBtn.addEventListener('click', closePlayer);
 
+        // 倍速按钮：循环切换
+        mpSpeedBtn.addEventListener('click', () => {
+            speedIndex = (speedIndex + 1) % SPEEDS.length;
+            applySpeed();
+            updateSpeedBtn();
+        });
+
+        // 进度条点击跳转
         mpProgressWrap.addEventListener('click', (e) => {
-            if (!audio.duration) return;
+            if (!audio.duration || !isFinite(audio.duration)) return;
             const rect = mpProgressWrap.getBoundingClientRect();
             const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
             audio.currentTime = pct * audio.duration;
         });
 
+        // 音频事件
         audio.addEventListener('play', () => {
             mpPlayBtn.innerHTML = ICON_PAUSE;
         });
@@ -614,10 +715,19 @@
         });
 
         audio.addEventListener('timeupdate', () => {
-            if (audio.duration && !isNaN(audio.duration)) {
+            if (audio.duration && isFinite(audio.duration)) {
                 const pct = (audio.currentTime / audio.duration) * 100;
                 mpProgressBar.style.width = pct + '%';
             }
+            updateTimeDisplay();
+        });
+
+        audio.addEventListener('loadedmetadata', () => {
+            updateTimeDisplay();
+        });
+
+        audio.addEventListener('durationchange', () => {
+            updateTimeDisplay();
         });
 
         audio.addEventListener('ended', () => {
@@ -627,11 +737,15 @@
 
         audio.addEventListener('error', () => {
             console.error('音频加载失败');
+            mpTime.textContent = '0:00 / --:--';
         });
 
+        // 搜索和分类
         searchInput.addEventListener('input', applyFilter);
         categorySelect.addEventListener('change', applyFilter);
 
+        // 初始化
+        updateSpeedBtn();
         loadData();
     </script>
 </body>
