@@ -27,11 +27,11 @@
     <div class="mini-player" id="miniPlayer">
         <img class="mp-cover" id="mpCover" src="" alt="">
         <button class="mp-btn mp-play" id="mpPlayBtn" aria-label="播放/暂停"></button>
-        <button class="mp-btn mp-skip mp-skip-desktop" data-skip="-15" aria-label="后退15秒">-15</button>
-        <button class="mp-btn mp-skip mp-skip-desktop" data-skip="15" aria-label="前进15秒">+15</button>
         <div class="mp-title" id="mpTitle">
             <span class="mp-title-inner" id="mpTitleInner">—</span>
         </div>
+        <button class="mp-btn mp-skip mp-skip-desktop" data-skip="-15" aria-label="后退15秒">-15</button>
+        <button class="mp-btn mp-skip mp-skip-desktop" data-skip="15" aria-label="前进15秒">+15</button>
         <button class="mp-btn mp-speed" id="mpSpeedBtn" aria-label="播放速度">1x</button>
         <button class="mp-btn mp-close" id="mpCloseBtn" aria-label="关闭"></button>
         <div class="mp-progress-row">
@@ -104,11 +104,9 @@
         let _titleScrollTimer = null;
         function setupTitleScroll() {
             const inner = mpTitleInner;
-            // 重置
             inner.classList.remove('scrolling');
             inner.style.removeProperty('--scroll-dist');
             inner.style.removeProperty('--scroll-duration');
-            // 强制 reflow，确保重新计算
             void inner.offsetWidth;
 
             const innerW = inner.scrollWidth;
@@ -116,7 +114,6 @@
             const overflow = innerW - outerW;
 
             if (overflow > 6) {
-                // 溢出越多，滚动越慢；控制在 4~14 秒
                 const duration = Math.max(4, Math.min(14, overflow / 18));
                 inner.style.setProperty('--scroll-dist', `-${overflow + 6}px`);
                 inner.style.setProperty('--scroll-duration', `${duration}s`);
@@ -292,7 +289,6 @@
             mpTime.textContent = '0:00 / 0:00';
             miniPlayer.classList.add('active');
 
-            // 等待布局完成后重新计算标题滚动
             requestAnimationFrame(() => requestAnimationFrame(setupTitleScroll));
         }
 
@@ -335,7 +331,6 @@
             }
         });
 
-        // ±15s 按钮：桌面/手机两组，统一用 data-skip 处理
         miniPlayer.addEventListener('click', (e) => {
             const btn = e.target.closest('[data-skip]');
             if (!btn) return;
