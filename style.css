@@ -222,10 +222,9 @@ header h1 {
     width: 56px;
     height: 56px;
     border-radius: 10px;
-    object-fit: cover;
-    object-position: center;
+    object-fit: contain;
     flex-shrink: 0;
-    background: #f1f5f9;
+    background: transparent;
     display: block;
 }
 
