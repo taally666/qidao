@@ -23,22 +23,22 @@
         <div id="audioList" class="audio-list"></div>
     </div>
 
-<!-- 底部迷你播放器 -->
-<div class="mini-player" id="miniPlayer">
-    <button class="mp-btn mp-play" id="mpPlayBtn" aria-label="播放/暂停"></button>
-    <img class="mp-cover" id="mpCover" src="" alt="">
-    <div class="mp-info">
-        <div class="mp-title" id="mpTitle">—</div>
-        <div class="mp-progress-row">
-            <div class="mp-progress-wrap" id="mpProgressWrap">
-                <div class="mp-progress-bar" id="mpProgressBar"></div>
+    <!-- 底部迷你播放器：播放按钮 → 封面 → 信息 → 倍速 → 关闭 -->
+    <div class="mini-player" id="miniPlayer">
+        <button class="mp-btn mp-play" id="mpPlayBtn" aria-label="播放/暂停"></button>
+        <img class="mp-cover" id="mpCover" src="" alt="">
+        <div class="mp-info">
+            <div class="mp-title" id="mpTitle">—</div>
+            <div class="mp-progress-row">
+                <div class="mp-progress-wrap" id="mpProgressWrap">
+                    <div class="mp-progress-bar" id="mpProgressBar"></div>
+                </div>
+                <div class="mp-time" id="mpTime">0:00 / 0:00</div>
             </div>
-            <div class="mp-time" id="mpTime">0:00 / 0:00</div>
         </div>
+        <button class="mp-btn mp-speed" id="mpSpeedBtn" aria-label="播放速度">1x</button>
+        <button class="mp-btn mp-close" id="mpCloseBtn" aria-label="关闭"></button>
     </div>
-    <button class="mp-btn mp-speed" id="mpSpeedBtn" aria-label="播放速度">1x</button>
-    <button class="mp-btn mp-close" id="mpCloseBtn" aria-label="关闭"></button>
-</div>
 
     <script>
         // ========== 全局状态 ==========
