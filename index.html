@@ -25,9 +25,7 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        html {
-            -webkit-text-size-adjust: 100%;
-        }
+        html { -webkit-text-size-adjust: 100%; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans SC', sans-serif;
@@ -36,9 +34,10 @@
             line-height: 1.5;
             padding: 12px;
             padding-top: max(12px, env(safe-area-inset-top));
-            padding-bottom: max(12px, env(safe-area-inset-bottom));
             padding-left: max(12px, env(safe-area-inset-left));
             padding-right: max(12px, env(safe-area-inset-right));
+            /* 底部留出播放器空间 */
+            padding-bottom: calc(12px + 68px + env(safe-area-inset-bottom, 0px));
             min-height: 100vh;
         }
 
@@ -50,26 +49,22 @@
 
         /* ========== 头部 ========== */
         header {
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             text-align: center;
         }
 
         header h1 {
-            font-size: 1.15rem;
+            font-size: 1.1rem;
             font-weight: 700;
             color: var(--primary);
             line-height: 1.2;
-        }
-
-        header p {
-            display: none;
         }
 
         /* ========== 控制栏 ========== */
         .controls {
             display: flex;
             gap: 8px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
 
         .search-box {
@@ -83,11 +78,7 @@
             font-family: inherit;
             transition: border-color 0.15s;
         }
-
-        .search-box:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
+        .search-box:focus { outline: none; border-color: var(--primary); }
 
         .category-select {
             padding: 8px 10px;
@@ -96,45 +87,52 @@
             font-size: 0.9rem;
             background: var(--card-bg);
             cursor: pointer;
-            min-width: 110px;
+            min-width: 100px;
             font-family: inherit;
             color: var(--text);
         }
-
-        .category-select:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
+        .category-select:focus { outline: none; border-color: var(--primary); }
 
         /* ========== 列表 ========== */
         .audio-list {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
         }
 
+        /* 卡片：一行式布局，极简 */
         .audio-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 7px 10px;
             background: var(--card-bg);
             border: 1px solid var(--border);
             border-radius: var(--radius);
             box-shadow: var(--shadow);
-            padding: 10px;
-            display: flex;
-            gap: 10px;
-            align-items: flex-start;
-            transition: box-shadow 0.15s;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+            user-select: none;
         }
 
         @media (hover: hover) {
-            .audio-card:hover {
-                box-shadow: var(--shadow-hover);
-            }
+            .audio-card:hover { box-shadow: var(--shadow-hover); }
         }
 
-        /* 封面：正方形缩略图，居中裁剪 */
+        .audio-card.playing {
+            background: #eef2ff;
+            border-color: #c7d2fe;
+        }
+
+        .audio-card.playing .audio-title {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* 封面：小方图，居中裁剪 */
         .audio-cover {
-            width: 56px;
-            height: 56px;
+            width: 44px;
+            height: 44px;
             border-radius: 8px;
             object-fit: cover;
             object-position: center;
@@ -143,58 +141,32 @@
             display: block;
         }
 
-        .audio-info {
+        .audio-title {
             flex: 1;
             min-width: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .audio-title-row {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            min-width: 0;
-        }
-
-        .audio-title {
-            font-size: 0.95rem;
-            font-weight: 600;
+            font-size: 0.9rem;
+            font-weight: 500;
             color: var(--text);
             line-height: 1.3;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            flex: 1;
-            min-width: 0;
         }
 
         .audio-category {
+            flex-shrink: 0;
             font-size: 0.7rem;
             font-weight: 500;
             background: #eef2ff;
             color: var(--primary);
-            padding: 1px 8px;
+            padding: 2px 8px;
             border-radius: 999px;
             white-space: nowrap;
-            flex-shrink: 0;
         }
 
-        .audio-description {
-            color: var(--text-light);
-            font-size: 0.78rem;
-            line-height: 1.4;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        audio {
-            width: 100%;
-            height: 34px;
-            margin-top: 2px;
-            display: block;
+        .audio-card.playing .audio-category {
+            background: var(--primary);
+            color: #fff;
         }
 
         /* ========== 空状态 ========== */
@@ -208,29 +180,124 @@
             font-size: 0.9rem;
         }
 
+        /* ========== 底部迷你播放器 ========== */
+        .mini-player {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+            background: #ffffff;
+            border-top: 1px solid var(--border);
+            box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.08);
+            transform: translateY(110%);
+            transition: transform 0.3s ease;
+            z-index: 100;
+        }
+
+        .mini-player.active { transform: translateY(0); }
+
+        .mp-cover {
+            width: 42px;
+            height: 42px;
+            border-radius: 8px;
+            object-fit: cover;
+            object-position: center;
+            flex-shrink: 0;
+            background: #f1f5f9;
+            display: block;
+        }
+
+        .mp-info {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .mp-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text);
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .mp-progress-wrap {
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        /* 扩大点击/触摸区域 */
+        .mp-progress-wrap::before {
+            content: '';
+            position: absolute;
+            top: -10px; bottom: -10px;
+            left: 0; right: 0;
+        }
+
+        .mp-progress-bar {
+            height: 100%;
+            width: 0;
+            background: var(--primary);
+            border-radius: 2px;
+            transition: width 0.1s linear;
+            pointer-events: none;
+        }
+
+        .mp-btn {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            color: var(--text);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .mp-btn:hover { background: #f1f5f9; }
+
+        .mp-play {
+            background: var(--primary);
+            color: #fff;
+        }
+        .mp-play:hover { background: #4338ca; }
+
+        .mp-close { color: var(--text-light); }
+
         /* ========== 桌面端 ========== */
         @media (min-width: 700px) {
             body {
                 padding: 20px;
+                padding-bottom: calc(20px + 76px);
             }
 
             header {
-                margin-bottom: 18px;
+                margin-bottom: 16px;
             }
 
             header h1 {
                 font-size: 1.5rem;
             }
 
-            header p {
-                display: block;
-                color: var(--text-light);
-                font-size: 0.9rem;
-                margin-top: 2px;
-            }
-
             .controls {
-                margin-bottom: 16px;
+                margin-bottom: 14px;
                 gap: 10px;
             }
 
@@ -240,74 +307,80 @@
                 font-size: 0.95rem;
             }
 
-            .audio-list {
-                gap: 10px;
-            }
+            .audio-list { gap: 8px; }
 
             .audio-card {
-                padding: 12px;
+                padding: 9px 14px;
                 gap: 14px;
                 border-radius: 12px;
             }
 
             .audio-cover {
-                width: 72px;
-                height: 72px;
+                width: 52px;
+                height: 52px;
                 border-radius: 10px;
             }
 
-            .audio-title {
-                font-size: 1.05rem;
+            .audio-title { font-size: 1rem; }
+
+            .audio-category {
+                font-size: 0.75rem;
+                padding: 2px 10px;
             }
 
-            .audio-description {
-                font-size: 0.85rem;
-                margin-top: 2px;
+            .mini-player {
+                padding: 10px 20px;
+                gap: 14px;
+                padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
             }
 
-            audio {
-                height: 38px;
-                margin-top: 4px;
+            .mp-cover {
+                width: 48px;
+                height: 48px;
+            }
+
+            .mp-title { font-size: 0.95rem; }
+
+            .mp-btn {
+                width: 40px;
+                height: 40px;
             }
         }
 
         /* ========== 大屏 ========== */
         @media (min-width: 1200px) {
-            .container {
-                max-width: 1000px;
-            }
+            .container { max-width: 1000px; }
 
             .audio-cover {
-                width: 80px;
-                height: 80px;
-            }
-
-            .audio-card {
-                padding: 14px 16px;
+                width: 56px;
+                height: 56px;
             }
         }
 
         /* ========== 超小屏 ========== */
         @media (max-width: 360px) {
-            body {
-                padding: 10px;
-            }
-
-            .audio-cover {
-                width: 48px;
-                height: 48px;
-            }
+            body { padding: 10px; padding-bottom: calc(10px + 64px); }
 
             .audio-card {
-                padding: 8px;
+                padding: 6px 8px;
                 gap: 8px;
             }
 
-            .audio-title {
-                font-size: 0.88rem;
+            .audio-cover {
+                width: 40px;
+                height: 40px;
+                border-radius: 6px;
             }
 
-            audio {
+            .audio-title { font-size: 0.85rem; }
+
+            .mp-cover {
+                width: 36px;
+                height: 36px;
+            }
+
+            .mp-btn {
+                width: 32px;
                 height: 32px;
             }
         }
@@ -317,7 +390,6 @@
     <div class="container">
         <header>
             <h1>🎧 我的声音作品</h1>
-            <p>个人音频分享 · 纯净聆听 · 无需登录</p>
         </header>
 
         <div class="controls">
@@ -327,18 +399,51 @@
             </select>
         </div>
 
-        <div id="audioList" class="audio-list">
-            <!-- 动态渲染 -->
+        <div id="audioList" class="audio-list"></div>
+    </div>
+
+    <!-- 底部迷你播放器 -->
+    <div class="mini-player" id="miniPlayer">
+        <img class="mp-cover" id="mpCover" src="" alt="">
+        <div class="mp-info">
+            <div class="mp-title" id="mpTitle">—</div>
+            <div class="mp-progress-wrap" id="mpProgressWrap">
+                <div class="mp-progress-bar" id="mpProgressBar"></div>
+            </div>
         </div>
+        <button class="mp-btn mp-play" id="mpPlayBtn" aria-label="播放/暂停"></button>
+        <button class="mp-btn mp-close" id="mpCloseBtn" aria-label="关闭"></button>
     </div>
 
     <script>
+        // ========== 全局状态 ==========
         let allAudios = [];
+        let currentIndex = -1;
+        const audio = new Audio();
+        audio.preload = 'none';
+
+        // ========== DOM 引用 ==========
         const audioListEl = document.getElementById('audioList');
         const searchInput = document.getElementById('searchInput');
         const categorySelect = document.getElementById('categorySelect');
+        const miniPlayer = document.getElementById('miniPlayer');
+        const mpCover = document.getElementById('mpCover');
+        const mpTitle = document.getElementById('mpTitle');
+        const mpProgressWrap = document.getElementById('mpProgressWrap');
+        const mpProgressBar = document.getElementById('mpProgressBar');
+        const mpPlayBtn = document.getElementById('mpPlayBtn');
+        const mpCloseBtn = document.getElementById('mpCloseBtn');
 
-        // ============ 数据合并：把分类封面/默认描述合并进每个条目 ============
+        // ========== SVG 图标 ==========
+        const ICON_PLAY = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+        const ICON_PAUSE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+        const ICON_CLOSE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+        // 初始按钮图标
+        mpPlayBtn.innerHTML = ICON_PLAY;
+        mpCloseBtn.innerHTML = ICON_CLOSE;
+
+        // ========== 数据合并：把分类封面合并进条目 ==========
         function normalizeData(raw) {
             const defaults = raw.defaults || {};
             const categories = raw.categories || {};
@@ -350,14 +455,23 @@
                     title: item.title || '',
                     url: item.url || '',
                     category: item.category || '',
-                    description: item.description || catMeta.defaultDescription || '',
-                    // 优先级：条目自带 > 分类封面 > 全局默认
                     cover: item.cover || catMeta.cover || defaults.cover || ''
                 };
             });
         }
 
-        // ============ 加载数据 ============
+        // ========== HTML 转义 ==========
+        function escapeHtml(str) {
+            if (str == null) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // ========== 加载数据 ==========
         async function loadData() {
             try {
                 const response = await fetch('data.json');
@@ -372,65 +486,170 @@
             }
         }
 
-        // ============ HTML 转义 ============
-        function escapeHtml(str) {
-            if (!str) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
-
-        // ============ 渲染列表 ============
+        // ========== 渲染列表 ==========
         function renderAudios(audios) {
             if (audios.length === 0) {
                 audioListEl.innerHTML = `<div class="empty-message">🔍 没有找到匹配的音频</div>`;
                 return;
             }
 
-            audioListEl.innerHTML = audios.map(audio => `
-                <div class="audio-card">
-                    ${audio.cover ? `<img class="audio-cover" src="${escapeHtml(audio.cover)}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}
-                    <div class="audio-info">
-                        <div class="audio-title-row">
-                            <div class="audio-title">${escapeHtml(audio.title)}</div>
-                            ${audio.category ? `<span class="audio-category">${escapeHtml(audio.category)}</span>` : ''}
-                        </div>
-                        ${audio.description ? `<div class="audio-description">${escapeHtml(audio.description)}</div>` : ''}
-                        <audio controls preload="none" src="${escapeHtml(audio.url)}"></audio>
+            audioListEl.innerHTML = audios.map(item => {
+                const idx = allAudios.indexOf(item);
+                return `
+                    <div class="audio-card" data-idx="${idx}">
+                        ${item.cover
+                            ? `<img class="audio-cover" src="${escapeHtml(item.cover)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+                            : `<div class="audio-cover"></div>`}
+                        <div class="audio-title">${escapeHtml(item.title)}</div>
+                        ${item.category ? `<span class="audio-category">${escapeHtml(item.category)}</span>` : ''}
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
+
+            // 重新渲染后恢复高亮
+            updateCardHighlight();
         }
 
-        // ============ 填充分类下拉框 ============
+        // ========== 填充分类下拉框 ==========
         function populateCategories(audios) {
             const categories = [...new Set(audios.map(item => item.category).filter(Boolean))];
             categorySelect.innerHTML = '<option value="">全部</option>' +
                 categories.map(cat => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join('');
         }
 
-        // ============ 搜索 + 分类联合筛选 ============
+        // ========== 搜索 + 分类联合筛选 ==========
         function applyFilter() {
             const keyword = searchInput.value.toLowerCase().trim();
             const cat = categorySelect.value;
 
-            const filtered = allAudios.filter(audio => {
-                const titleMatch = audio.title.toLowerCase().includes(keyword);
-                const descMatch = audio.description ? audio.description.toLowerCase().includes(keyword) : false;
-                const keywordOk = !keyword || titleMatch || descMatch;
-                const catOk = !cat || audio.category === cat;
+            const filtered = allAudios.filter(item => {
+                const titleMatch = item.title.toLowerCase().includes(keyword);
+                const catOk = !cat || item.category === cat;
+                const keywordOk = !keyword || titleMatch;
                 return keywordOk && catOk;
             });
 
             renderAudios(filtered);
         }
 
+        // ========== 卡片高亮 ==========
+        function updateCardHighlight() {
+            document.querySelectorAll('.audio-card').forEach(card => {
+                const idx = parseInt(card.dataset.idx, 10);
+                card.classList.toggle('playing', idx === currentIndex);
+            });
+        }
+
+        // ========== 切换播放 ==========
+        function togglePlay(idx) {
+            const item = allAudios[idx];
+            if (!item) return;
+
+            // 同一条：切换播放/暂停
+            if (idx === currentIndex) {
+                if (audio.paused) {
+                    audio.play().catch(console.error);
+                } else {
+                    audio.pause();
+                }
+                return;
+            }
+
+            // 新的音频
+            currentIndex = idx;
+            audio.src = item.url;
+            audio.play().catch(err => {
+                console.error('播放失败:', err);
+                mpTitle.textContent = '播放失败：' + item.title;
+            });
+            updateMiniPlayer(item);
+            updateCardHighlight();
+        }
+
+        // ========== 更新迷你播放器 ==========
+        function updateMiniPlayer(item) {
+            if (item.cover) {
+                mpCover.src = item.cover;
+                mpCover.style.display = '';
+            } else {
+                mpCover.style.display = 'none';
+            }
+            mpTitle.textContent = item.title || '—';
+            mpProgressBar.style.width = '0%';
+            miniPlayer.classList.add('active');
+        }
+
+        // ========== 关闭播放器 ==========
+        function closePlayer() {
+            audio.pause();
+            audio.removeAttribute('src');
+            audio.load();
+            currentIndex = -1;
+            miniPlayer.classList.remove('active');
+            updateCardHighlight();
+        }
+
+        // ========== 事件绑定 ==========
+
+        // 点击卡片播放
+        audioListEl.addEventListener('click', (e) => {
+            const card = e.target.closest('.audio-card');
+            if (!card) return;
+            const idx = parseInt(card.dataset.idx, 10);
+            togglePlay(idx);
+        });
+
+        // 播放/暂停按钮
+        mpPlayBtn.addEventListener('click', () => {
+            if (!audio.src) return;
+            if (audio.paused) {
+                audio.play().catch(console.error);
+            } else {
+                audio.pause();
+            }
+        });
+
+        // 关闭按钮
+        mpCloseBtn.addEventListener('click', closePlayer);
+
+        // 进度条点击跳转
+        mpProgressWrap.addEventListener('click', (e) => {
+            if (!audio.duration) return;
+            const rect = mpProgressWrap.getBoundingClientRect();
+            const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            audio.currentTime = pct * audio.duration;
+        });
+
+        // 音频事件
+        audio.addEventListener('play', () => {
+            mpPlayBtn.innerHTML = ICON_PAUSE;
+        });
+
+        audio.addEventListener('pause', () => {
+            mpPlayBtn.innerHTML = ICON_PLAY;
+        });
+
+        audio.addEventListener('timeupdate', () => {
+            if (audio.duration && !isNaN(audio.duration)) {
+                const pct = (audio.currentTime / audio.duration) * 100;
+                mpProgressBar.style.width = pct + '%';
+            }
+        });
+
+        audio.addEventListener('ended', () => {
+            mpPlayBtn.innerHTML = ICON_PLAY;
+            mpProgressBar.style.width = '0%';
+        });
+
+        audio.addEventListener('error', () => {
+            console.error('音频加载失败');
+        });
+
+        // 搜索和分类
         searchInput.addEventListener('input', applyFilter);
         categorySelect.addEventListener('change', applyFilter);
 
+        // 启动
         loadData();
     </script>
 </body>
