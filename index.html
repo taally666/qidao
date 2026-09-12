@@ -15,7 +15,10 @@
             --border: #e2e8f0;
             --shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
             --radius: 8px;
-            --row-h: 44px;
+            /* 音频列表行高：调小 */
+            --row-h: 36px;
+            /* 迷你播放器高度：调大 */
+            --player-h: 84px;
         }
 
         * {
@@ -36,7 +39,7 @@
             padding-top: max(12px, env(safe-area-inset-top));
             padding-left: max(12px, env(safe-area-inset-left));
             padding-right: max(12px, env(safe-area-inset-right));
-            padding-bottom: calc(12px + 68px + env(safe-area-inset-bottom, 0px));
+            padding-bottom: calc(12px + var(--player-h) + env(safe-area-inset-bottom, 0px));
             min-height: 100vh;
         }
 
@@ -48,12 +51,12 @@
 
         /* ========== 头部 ========== */
         header {
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             text-align: center;
         }
 
         header h1 {
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             font-weight: 700;
             color: var(--primary);
             line-height: 1.2;
@@ -69,10 +72,10 @@
         .search-box {
             flex: 1;
             min-width: 0;
-            padding: 8px 12px;
+            padding: 7px 12px;
             border: 1px solid var(--border);
             border-radius: 8px;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             background: var(--card-bg);
             font-family: inherit;
             transition: border-color 0.15s;
@@ -80,34 +83,34 @@
         .search-box:focus { outline: none; border-color: var(--primary); }
 
         .category-select {
-            padding: 8px 10px;
+            padding: 7px 10px;
             border: 1px solid var(--border);
             border-radius: 8px;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             background: var(--card-bg);
             cursor: pointer;
-            min-width: 96px;
+            min-width: 92px;
             font-family: inherit;
             color: var(--text);
         }
         .category-select:focus { outline: none; border-color: var(--primary); }
 
-        /* ========== 列表：纯文本行 ========== */
+        /* ========== 列表：紧凑纯文本行 ========== */
         .audio-list {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 3px;
         }
 
         .audio-card {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 0 12px;
+            gap: 8px;
+            padding: 0 10px;
             height: var(--row-h);
             background: var(--card-bg);
             border: 1px solid var(--border);
-            border-radius: var(--radius);
+            border-radius: 6px;
             cursor: pointer;
             transition: background 0.12s, border-color 0.12s;
             user-select: none;
@@ -122,8 +125,8 @@
 
         .audio-index {
             flex-shrink: 0;
-            width: 24px;
-            font-size: 0.78rem;
+            width: 20px;
+            font-size: 0.72rem;
             color: var(--text-light);
             text-align: right;
             font-variant-numeric: tabular-nums;
@@ -138,13 +141,13 @@
         .audio-title {
             flex: 1;
             min-width: 0;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 500;
             color: var(--text);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            line-height: 1.3;
+            line-height: 1.2;
         }
 
         .audio-card.playing .audio-title {
@@ -154,7 +157,7 @@
 
         .audio-category {
             flex-shrink: 0;
-            font-size: 0.72rem;
+            font-size: 0.68rem;
             color: var(--text-light);
             white-space: nowrap;
         }
@@ -174,7 +177,7 @@
             font-size: 0.9rem;
         }
 
-        /* ========== 底部迷你播放器 ========== */
+        /* ========== 底部迷你播放器（增大） ========== */
         .mini-player {
             position: fixed;
             left: 0;
@@ -182,9 +185,9 @@
             bottom: 0;
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
-            padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+            gap: 12px;
+            padding: 10px 12px;
+            padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
             background: #ffffff;
             border-top: 1px solid var(--border);
             box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.08);
@@ -195,10 +198,11 @@
 
         .mini-player.active { transform: translateY(0); }
 
+        /* 封面：明显增大 */
         .mp-cover {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
+            width: 56px;
+            height: 56px;
+            border-radius: 10px;
             object-fit: cover;
             object-position: center;
             flex-shrink: 0;
@@ -211,20 +215,19 @@
             min-width: 0;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 6px;
         }
 
         .mp-title {
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             font-weight: 600;
             color: var(--text);
-            line-height: 1.2;
+            line-height: 1.25;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        /* 进度条行：进度条 + 时长 */
         .mp-progress-row {
             display: flex;
             align-items: center;
@@ -235,9 +238,9 @@
         .mp-progress-wrap {
             flex: 1;
             min-width: 0;
-            height: 4px;
+            height: 5px;
             background: #e2e8f0;
-            border-radius: 2px;
+            border-radius: 3px;
             position: relative;
             cursor: pointer;
         }
@@ -245,7 +248,7 @@
         .mp-progress-wrap::before {
             content: '';
             position: absolute;
-            top: -10px; bottom: -10px;
+            top: -12px; bottom: -12px;
             left: 0; right: 0;
         }
 
@@ -253,26 +256,24 @@
             height: 100%;
             width: 0;
             background: var(--primary);
-            border-radius: 2px;
+            border-radius: 3px;
             transition: width 0.1s linear;
             pointer-events: none;
         }
 
-        /* 时长：等宽数字，不换行 */
         .mp-time {
             flex-shrink: 0;
-            font-size: 0.68rem;
+            font-size: 0.72rem;
             color: var(--text-light);
             font-variant-numeric: tabular-nums;
             white-space: nowrap;
             line-height: 1;
         }
 
-        /* 通用按钮 */
         .mp-btn {
             flex-shrink: 0;
-            width: 36px;
-            height: 36px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             border: none;
             background: transparent;
@@ -295,24 +296,20 @@
 
         .mp-close { color: var(--text-light); }
 
-        /* 倍速按钮：显示文字，宽度自适应 */
         .mp-speed {
             width: auto;
-            min-width: 40px;
-            height: 36px;
-            padding: 0 8px;
-            border-radius: 8px;
-            font-size: 0.78rem;
+            min-width: 44px;
+            height: 40px;
+            padding: 0 10px;
+            border-radius: 10px;
+            font-size: 0.8rem;
             font-weight: 600;
             color: var(--text-light);
             font-variant-numeric: tabular-nums;
         }
 
-        .mp-speed:hover {
-            color: var(--primary);
-        }
+        .mp-speed:hover { color: var(--primary); }
 
-        /* 非 1x 时高亮 */
         .mp-speed.active {
             color: var(--primary);
             background: #eef2ff;
@@ -321,16 +318,17 @@
         /* ========== 桌面端 ========== */
         @media (min-width: 700px) {
             :root {
-                --row-h: 48px;
+                --row-h: 40px;
+                --player-h: 96px;
             }
 
             body {
                 padding: 20px;
-                padding-bottom: calc(20px + 76px);
+                padding-bottom: calc(20px + var(--player-h));
             }
 
-            header { margin-bottom: 14px; }
-            header h1 { font-size: 1.4rem; }
+            header { margin-bottom: 12px; }
+            header h1 { font-size: 1.35rem; }
 
             .controls {
                 margin-bottom: 10px;
@@ -339,90 +337,109 @@
 
             .search-box,
             .category-select {
-                padding: 9px 14px;
-                font-size: 0.95rem;
+                padding: 8px 14px;
+                font-size: 0.92rem;
             }
 
-            .audio-list { gap: 6px; }
+            .audio-list { gap: 4px; }
 
             .audio-card {
-                padding: 0 16px;
-                gap: 14px;
+                padding: 0 14px;
+                gap: 12px;
+                border-radius: 8px;
             }
 
             .audio-index {
-                width: 30px;
-                font-size: 0.82rem;
+                width: 26px;
+                font-size: 0.76rem;
             }
 
-            .audio-title { font-size: 1rem; }
-            .audio-category { font-size: 0.78rem; }
+            .audio-title { font-size: 0.92rem; }
+            .audio-category { font-size: 0.72rem; }
 
             .mini-player {
-                padding: 10px 20px;
-                gap: 14px;
-                padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
+                padding: 12px 20px;
+                gap: 16px;
+                padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
             }
 
+            /* 桌面端封面进一步增大 */
             .mp-cover {
+                width: 68px;
+                height: 68px;
+                border-radius: 12px;
+            }
+
+            .mp-title { font-size: 1rem; }
+
+            .mp-info { gap: 8px; }
+
+            .mp-time { font-size: 0.78rem; }
+
+            .mp-btn {
                 width: 44px;
                 height: 44px;
             }
 
-            .mp-title { font-size: 0.92rem; }
-
-            .mp-time { font-size: 0.72rem; }
-
-            .mp-btn {
-                width: 40px;
-                height: 40px;
-            }
-
             .mp-speed {
-                min-width: 44px;
-                height: 40px;
-                font-size: 0.82rem;
+                min-width: 50px;
+                height: 44px;
+                font-size: 0.85rem;
             }
         }
 
         /* ========== 大屏 ========== */
         @media (min-width: 1200px) {
             .container { max-width: 1000px; }
+
+            .mp-cover {
+                width: 76px;
+                height: 76px;
+            }
         }
 
         /* ========== 超小屏 ========== */
         @media (max-width: 360px) {
             :root {
-                --row-h: 40px;
+                --row-h: 34px;
+                --player-h: 76px;
             }
 
-            body { padding: 10px; padding-bottom: calc(10px + 64px); }
+            body { padding: 10px; padding-bottom: calc(10px + var(--player-h)); }
 
             .audio-card {
-                padding: 0 10px;
-                gap: 8px;
+                padding: 0 8px;
+                gap: 6px;
             }
 
-            .audio-title { font-size: 0.85rem; }
-            .audio-category { font-size: 0.68rem; }
+            .audio-title { font-size: 0.8rem; }
+            .audio-category { font-size: 0.64rem; }
+
+            .mini-player {
+                gap: 10px;
+                padding: 8px 10px;
+                padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+            }
 
             .mp-cover {
-                width: 34px;
-                height: 34px;
+                width: 48px;
+                height: 48px;
             }
 
-            .mp-time { font-size: 0.62rem; }
+            .mp-title { font-size: 0.82rem; }
+
+            .mp-time { font-size: 0.64rem; }
 
             .mp-btn {
-                width: 32px;
-                height: 32px;
+                width: 36px;
+                height: 36px;
             }
 
             .mp-speed {
-                min-width: 36px;
-                height: 32px;
-                padding: 0 6px;
-                font-size: 0.72rem;
+                min-width: 40px;
+                height: 36px;
+                padding: 0 8px;
+                font-size: 0.74rem;
             }
         }
     </style>
@@ -467,7 +484,6 @@
         const audio = new Audio();
         audio.preload = 'none';
 
-        // 播放速度循环列表
         const SPEEDS = [1, 1.25, 1.5, 2, 0.75];
         let speedIndex = 0;
 
@@ -486,15 +502,14 @@
         const mpCloseBtn = document.getElementById('mpCloseBtn');
 
         // ========== SVG 图标 ==========
-        const ICON_PLAY = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
-        const ICON_PAUSE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
-        const ICON_CLOSE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+        const ICON_PLAY = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+        const ICON_PAUSE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+        const ICON_CLOSE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 
         mpPlayBtn.innerHTML = ICON_PLAY;
         mpCloseBtn.innerHTML = ICON_CLOSE;
 
         // ========== 工具函数 ==========
-        // 时间格式化：秒 → m:ss 或 h:mm:ss
         function formatTime(sec) {
             if (sec == null || isNaN(sec) || !isFinite(sec) || sec < 0) return '0:00';
             const total = Math.floor(sec);
@@ -616,7 +631,6 @@
 
             currentIndex = idx;
             audio.src = item.url;
-            // 设置 src 后 playbackRate 会重置为 defaultPlaybackRate，这里保持当前倍速
             applySpeed();
             audio.play().catch(err => {
                 console.error('播放失败:', err);
@@ -626,14 +640,13 @@
             updateCardHighlight();
         }
 
-        // ========== 应用当前倍速 ==========
+        // ========== 应用倍速 ==========
         function applySpeed() {
             const rate = SPEEDS[speedIndex];
             audio.playbackRate = rate;
             audio.defaultPlaybackRate = rate;
         }
 
-        // ========== 更新倍速按钮 ==========
         function updateSpeedBtn() {
             const rate = SPEEDS[speedIndex];
             mpSpeedBtn.textContent = rate + 'x';
@@ -690,14 +703,12 @@
 
         mpCloseBtn.addEventListener('click', closePlayer);
 
-        // 倍速按钮：循环切换
         mpSpeedBtn.addEventListener('click', () => {
             speedIndex = (speedIndex + 1) % SPEEDS.length;
             applySpeed();
             updateSpeedBtn();
         });
 
-        // 进度条点击跳转
         mpProgressWrap.addEventListener('click', (e) => {
             if (!audio.duration || !isFinite(audio.duration)) return;
             const rect = mpProgressWrap.getBoundingClientRect();
@@ -705,7 +716,6 @@
             audio.currentTime = pct * audio.duration;
         });
 
-        // 音频事件
         audio.addEventListener('play', () => {
             mpPlayBtn.innerHTML = ICON_PAUSE;
         });
@@ -722,13 +732,8 @@
             updateTimeDisplay();
         });
 
-        audio.addEventListener('loadedmetadata', () => {
-            updateTimeDisplay();
-        });
-
-        audio.addEventListener('durationchange', () => {
-            updateTimeDisplay();
-        });
+        audio.addEventListener('loadedmetadata', updateTimeDisplay);
+        audio.addEventListener('durationchange', updateTimeDisplay);
 
         audio.addEventListener('ended', () => {
             mpPlayBtn.innerHTML = ICON_PLAY;
@@ -740,11 +745,9 @@
             mpTime.textContent = '0:00 / --:--';
         });
 
-        // 搜索和分类
         searchInput.addEventListener('input', applyFilter);
         categorySelect.addEventListener('change', applyFilter);
 
-        // 初始化
         updateSpeedBtn();
         loadData();
     </script>
