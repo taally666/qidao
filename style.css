@@ -106,38 +106,56 @@ header h1 {
 }
 
 /* ============================================================
-   音频列表
+   列表：区 + 分集
    ============================================================ */
 .audio-list {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
 }
 
-.audio-card {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 10px;
-    height: var(--row-h);
+/* --- 区容器 --- */
+.zone {
     background: var(--card-bg);
     border: 1px solid var(--border);
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.12s, border-color 0.12s;
-    user-select: none;
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color 0.15s;
 }
 
-.audio-card:hover {
-    background: #f8fafc;
-}
-
-.audio-card.playing {
-    background: #eef2ff;
+.zone.open {
     border-color: #c7d2fe;
 }
 
-.audio-index {
+/* --- 区头（点击展开/折叠） --- */
+.zone-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    height: var(--row-h);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.12s;
+}
+
+.zone-header:hover {
+    background: #f8fafc;
+}
+
+.zone-arrow {
+    flex-shrink: 0;
+    color: var(--text-light);
+    transition: transform 0.2s;
+    transform-origin: 50% 50%;
+}
+
+.zone.open .zone-arrow {
+    transform: rotate(90deg);
+    color: var(--primary);
+}
+
+.zone-index {
     flex-shrink: 0;
     width: 20px;
     font-size: 0.72rem;
@@ -147,12 +165,7 @@ header h1 {
     line-height: 1;
 }
 
-.audio-card.playing .audio-index {
-    color: var(--primary);
-    font-weight: 600;
-}
-
-.audio-title {
+.zone-title {
     flex: 1;
     min-width: 0;
     font-size: 0.85rem;
@@ -164,20 +177,87 @@ header h1 {
     line-height: 1.2;
 }
 
-.audio-card.playing .audio-title {
+.zone.open .zone-title {
     color: var(--primary);
     font-weight: 600;
 }
 
-.audio-category {
+.zone-category {
     flex-shrink: 0;
     font-size: 0.68rem;
     color: var(--text-light);
     white-space: nowrap;
 }
 
-.audio-card.playing .audio-category {
+.zone-count {
+    flex-shrink: 0;
+    font-size: 0.68rem;
+    color: var(--text-light);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+/* --- 分集列表（默认隐藏） --- */
+.zone-tracks {
+    display: none;
+    padding: 3px 0;
+    background: #fafbfc;
+    border-top: 1px solid var(--border);
+}
+
+.zone.open .zone-tracks {
+    display: block;
+}
+
+/* --- 单集 --- */
+.track {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px 0 34px;
+    height: 30px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    color: var(--text);
+    user-select: none;
+    transition: background 0.1s;
+}
+
+.track:hover {
+    background: #f1f5f9;
+}
+
+.track.playing {
+    background: #eef2ff;
+}
+
+.track.playing .track-title {
     color: var(--primary);
+    font-weight: 600;
+}
+
+.track.playing .track-index {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.track-index {
+    flex-shrink: 0;
+    width: 26px;
+    font-size: 0.7rem;
+    color: var(--text-light);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.track-title {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
 }
 
 /* ============================================================
@@ -378,26 +458,37 @@ header h1 {
     }
 
     .audio-list {
-        gap: 4px;
+        gap: 6px;
     }
 
-    .audio-card {
+    .zone-header {
         padding: 0 14px;
         gap: 12px;
-        border-radius: 8px;
     }
 
-    .audio-index {
+    .zone-index {
         width: 26px;
         font-size: 0.76rem;
     }
 
-    .audio-title {
+    .zone-title {
         font-size: 0.92rem;
     }
 
-    .audio-category {
+    .zone-category,
+    .zone-count {
         font-size: 0.72rem;
+    }
+
+    .track {
+        padding: 0 14px 0 40px;
+        height: 34px;
+        font-size: 0.88rem;
+    }
+
+    .track-index {
+        width: 30px;
+        font-size: 0.74rem;
     }
 
     .mini-player {
@@ -464,17 +555,29 @@ header h1 {
         padding-bottom: calc(10px + var(--player-h));
     }
 
-    .audio-card {
+    .zone-header {
         padding: 0 8px;
         gap: 6px;
     }
 
-    .audio-title {
+    .zone-title {
         font-size: 0.8rem;
     }
 
-    .audio-category {
+    .zone-category,
+    .zone-count {
         font-size: 0.64rem;
+    }
+
+    .track {
+        padding: 0 8px 0 28px;
+        height: 28px;
+        font-size: 0.78rem;
+    }
+
+    .track-index {
+        width: 22px;
+        font-size: 0.66rem;
     }
 
     .mini-player {
