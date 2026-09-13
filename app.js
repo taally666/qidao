@@ -224,7 +224,7 @@ function renderNovelList() {
     mainView.innerHTML = `
         <div class="novel-grid">
             ${novelsIndex.novels.map(n => `
-                <div class="novel-card" data-id="${escapeHtml(n.id)}">
+                <div class="novel-card" data-id="${escapeHtml(n.id)}" title="${escapeHtml(n.title)}">
                     ${n.cover
                         ? `<img class="novel-card-cover" src="${escapeHtml(n.cover)}" alt="" loading="lazy" onerror="this.style.display='none'">`
                         : `<div class="novel-card-cover"></div>`}
@@ -518,6 +518,9 @@ function closeManager() {
     document.body.style.overflow = '';
 }
 
+// ============================================================
+// 缓存管理
+// ============================================================
 async function renderManager() {
     const cache = await caches.open(AUDIO_CACHE);
 
@@ -555,7 +558,7 @@ async function renderManager() {
                         <div class="mt-sub">${sub}</div>
                         <div class="mt-progress"><div class="mt-progress-bar" style="width:${pct}%"></div></div>
                     </div>
-                    <button class="mt-cancel">取消</button>
+                    <button class="mt-cancel" title="取消下载">取消</button>
                 </div>
             `;
         });
@@ -570,11 +573,41 @@ async function renderManager() {
                         <div class="mi-title">${escapeHtml(i.title)}</div>
                         <div class="mi-sub">共 ${i.count} 集 · ${i.size > 0 ? formatSize(i.size) : '未知大小'}</div>
                     </div>
-                    <button class="mi-delete" data-url="${escapeHtml(i.url)}" aria-label="删除">${ICON_TRASH}</button>
+                    <button class="mi-delete" data-url="${escapeHtml(i.url)}" aria-label="删除" title="删除此项缓存">${ICON_TRASH}</button>
                 </div>
             `;
         });
     }
+
+    if (html === '') {
+        html = `<div class="manager-empty">暂无缓存</div>`;
+    }
+
+    managerBody.innerHTML = html;
+
+    if (cachedItems.length > 0) {
+        managerFooter.innerHTML = `
+            <button class="mf-clear" id="mfClearBtn" title="清空全部缓存">清空全部（${formatSize(totalSize)}）</button>
+        `;
+        document.getElementById('mfClearBtn').addEventListener('click', clearAllCache);
+    } else {
+        managerFooter.innerHTML = '';
+    }
+
+    managerBody.querySelectorAll('.mt-cancel').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (currentTask) currentTask.controller.abort();
+        });
+    });
+    managerBody.querySelectorAll('.mi-delete').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const url = btn.dataset.url;
+            if (confirm('删除这项缓存？')) {
+                await deletePartByUrl(url);
+            }
+        });
+    });
+}
 
     if (html === '') {
         html = `<div class="manager-empty">暂无缓存</div>`;
@@ -904,6 +937,9 @@ window.addEventListener('popstate', handleUrl);
 // ============================================================
 // 悬停提示
 // ============================================================
+// ============================================================
+// 悬停提示
+// ============================================================
 function setupTooltips() {
     // 头部
     headerManagerBtn.title = '缓存管理';
@@ -925,9 +961,6 @@ function setupTooltips() {
 
     // 缓存管理弹层
     managerCloseBtn.title = '关闭';
-
-    // 小说卡片
-    // 每张卡片的 title 在渲染时动态设置（见下方 renderNovelList 改动）
 }
 
 // ============================================================
