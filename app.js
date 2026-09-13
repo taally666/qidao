@@ -1,10 +1,10 @@
 // ============================================================
 // 全局状态
 // ============================================================
-let novelsIndex = null;        // novels.json 加载结果
-let allTracks = [];            // 当前小说的所有 track
-let currentNovel = null;       // 当前打开的小说
-let currentPlaying = null;     // 当前播放的 track 对象（独立于 allTracks）
+let novelsIndex = null;
+let allTracks = [];
+let currentNovel = null;
+let currentPlaying = null;
 
 const audio = new Audio();
 audio.preload = 'none';
@@ -15,7 +15,7 @@ let speedIndex = 0;
 const AUDIO_CACHE = 'audio-v1';
 const blobUrlCache = new Map();
 const partIndex = new Map();
-const novelDataCache = new Map();  // id → data.json 对象
+const novelDataCache = new Map();
 
 let currentTask = null;
 
@@ -165,7 +165,6 @@ async function showNovelList() {
     headerBackBtn.style.display = 'none';
     controlsBar.style.display = 'none';
 
-    // URL 恢复
     const url = new URL(window.location);
     url.searchParams.delete('novel');
     history.pushState({}, '', url);
@@ -174,7 +173,6 @@ async function showNovelList() {
 }
 
 async function showNovelDetail(id, pushState = true) {
-    // 加载小说数据
     let raw = novelDataCache.get(id);
     if (!raw) {
         const novel = novelsIndex.novels.find(n => n.id === id);
@@ -244,7 +242,6 @@ function renderTrackList(tracks) {
         return;
     }
 
-    // 按 category（篇）分组，保持顺序
     const groups = [];
     const groupMap = new Map();
     tracks.forEach(t => {
@@ -286,7 +283,6 @@ function applyFilter() {
         renderTrackList(allTracks);
         return;
     }
-
     const filtered = allTracks.filter(item =>
         item.title.toLowerCase().includes(keyword)
     );
@@ -344,7 +340,7 @@ async function refreshCacheBtn() {
     if (!currentPlaying) {
         mpCacheBtn.innerHTML = ICON_CLOUD_DOWN;
         mpCacheBtn.classList.remove('cached', 'downloading');
-        mpCacheBtn.title = '';
+        mpCacheBtn.title = '缓存本 part（离线收听）';
         return;
     }
 
@@ -365,7 +361,7 @@ async function refreshCacheBtn() {
     } else {
         mpCacheBtn.innerHTML = ICON_CLOUD_DOWN;
         mpCacheBtn.classList.remove('cached', 'downloading');
-        mpCacheBtn.title = '缓存本 part';
+        mpCacheBtn.title = '缓存本 part（离线收听）';
     }
 }
 
@@ -397,7 +393,7 @@ async function startDownload(url) {
         const head = await fetch(url, { method: 'HEAD', mode: 'cors' });
         const len = head.headers.get('Content-Length');
         if (len) sizeText = formatSize(parseInt(len, 10));
-    } catch (e) {}
+    } catch (e) { /* 忽略 */ }
 
     const msg = `本 part 包含 ${count} 集，${sizeText}。\n\n缓存后可离线收听这些集。\n\n开始缓存？`;
     if (!confirm(msg)) return;
@@ -518,9 +514,6 @@ function closeManager() {
     document.body.style.overflow = '';
 }
 
-// ============================================================
-// 缓存管理
-// ============================================================
 async function renderManager() {
     const cache = await caches.open(AUDIO_CACHE);
 
@@ -608,36 +601,6 @@ async function renderManager() {
         });
     });
 }
-
-    if (html === '') {
-        html = `<div class="manager-empty">暂无缓存</div>`;
-    }
-
-    managerBody.innerHTML = html;
-
-    if (cachedItems.length > 0) {
-        managerFooter.innerHTML = `
-            <button class="mf-clear" id="mfClearBtn">清空全部（${formatSize(totalSize)}）</button>
-        `;
-        document.getElementById('mfClearBtn').addEventListener('click', clearAllCache);
-    } else {
-        managerFooter.innerHTML = '';
-    }
-
-    managerBody.querySelectorAll('.mt-cancel').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (currentTask) currentTask.controller.abort();
-        });
-    });
-    managerBody.querySelectorAll('.mi-delete').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const url = btn.dataset.url;
-            if (confirm('删除这项缓存？')) {
-                await deletePartByUrl(url);
-            }
-        });
-    });
-
 
 async function clearAllCache() {
     if (!confirm('确定清空所有已缓存的 part 吗？')) return;
@@ -805,15 +768,11 @@ function closePlayer() {
 // 事件绑定
 // ============================================================
 mainView.addEventListener('click', (e) => {
-    // 小说卡片
     const card = e.target.closest('.novel-card');
     if (card) {
-        const id = card.dataset.id;
-        showNovelDetail(id);
+        showNovelDetail(card.dataset.id);
         return;
     }
-
-    // 音频项
     const item = e.target.closest('.audio-item');
     if (item) {
         const idx = parseInt(item.dataset.idx, 10);
@@ -885,7 +844,6 @@ audio.addEventListener('timeupdate', () => {
     updateProgress();
 
     if (!audio.paused && audio.currentTime >= track.end - 0.05) {
-        // 找下一集
         const idx = allTracks.findIndex(t =>
             t.url === track.url && t.start === track.start
         );
@@ -934,24 +892,19 @@ function handleUrl() {
 }
 
 window.addEventListener('popstate', handleUrl);
-// ============================================================
-// 悬停提示
-// ============================================================
+
 // ============================================================
 // 悬停提示
 // ============================================================
 function setupTooltips() {
-    // 头部
     headerManagerBtn.title = '缓存管理';
     headerBackBtn.title = '返回小说列表';
 
-    // 播放器
     mpPlayBtn.title = '播放 / 暂停';
     mpSpeedBtn.title = '切换播放速度';
     mpCacheBtn.title = '缓存本 part（离线收听）';
     mpCloseBtn.title = '关闭播放器';
 
-    // ±15s（两组按钮，桌面和手机）
     document.querySelectorAll('[data-skip="-15"]').forEach(b => {
         b.title = '后退 15 秒';
     });
@@ -959,7 +912,6 @@ function setupTooltips() {
         b.title = '前进 15 秒';
     });
 
-    // 缓存管理弹层
     managerCloseBtn.title = '关闭';
 }
 
