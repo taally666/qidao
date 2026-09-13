@@ -303,25 +303,6 @@ header h1 {
 }
 
 /* ============================================================
-   下载按钮（WAV 导出）
-   ============================================================ */
-.mp-download {
-    color: var(--text-light);
-}
-.mp-download:hover {
-    color: var(--primary);
-    background: #eef2ff;
-}
-.mp-download:disabled {
-    opacity: 0.6;
-    cursor: default;
-    background: transparent;
-}
-
-/* 手机端隐藏下载按钮，只保留缓存按钮 */
-.mp-download-desktop { display: none; }
-
-/* ============================================================
    标题（自动滚动）
    ============================================================ */
 .mp-title {
@@ -498,12 +479,6 @@ header h1 {
         height: 40px;
     }
 
-    /* 下载按钮桌面尺寸 */
-    .mp-download {
-        width: 40px;
-        height: 40px;
-    }
-
     .mp-title {
         font-size: 1rem;
         font-weight: 600;
@@ -528,9 +503,6 @@ header h1 {
     /* 桌面端切换按钮分组 */
     .mp-skip-desktop { display: flex; }
     .mp-skip-mobile { display: none; }
-
-    /* 桌面端显示下载按钮 */
-    .mp-download-desktop { display: flex; }
 }
 
 /* ============================================================
