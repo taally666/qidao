@@ -60,6 +60,10 @@ header h1 {
     font-weight: 700;
     color: var(--primary);
     line-height: 1.2;
+    max-width: calc(100% - 80px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .header-manager {
@@ -87,6 +91,31 @@ header h1 {
     background: #eef2ff;
 }
 
+.header-back {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.15s;
+}
+
+.header-back:hover {
+    color: var(--primary);
+    border-color: #c7d2fe;
+    background: #eef2ff;
+}
+
 /* ============================================================
    控制栏
    ============================================================ */
@@ -109,21 +138,50 @@ header h1 {
 }
 .search-box:focus { outline: none; border-color: var(--primary); }
 
-.category-select {
-    padding: 7px 10px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 0.88rem;
-    background: var(--card-bg);
-    cursor: pointer;
-    min-width: 92px;
-    font-family: inherit;
-    color: var(--text);
+/* ============================================================
+   小说列表（网格）
+   ============================================================ */
+.novel-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
 }
-.category-select:focus { outline: none; border-color: var(--primary); }
+
+.novel-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.novel-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: #c7d2fe;
+}
+
+.novel-card-cover {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    background: #f1f5f9;
+    display: block;
+}
+
+.novel-card-title {
+    padding: 8px 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
 /* ============================================================
-   列表
+   列表：扁平集列表
    ============================================================ */
 .audio-list {
     display: flex;
@@ -184,14 +242,22 @@ header h1 {
     font-weight: 600;
 }
 
-.audio-category {
-    flex-shrink: 0;
-    font-size: 0.68rem;
-    color: var(--text-light);
-    white-space: nowrap;
+/* ============================================================
+   篇分组
+   ============================================================ */
+.part-group {
+    margin-bottom: 14px;
 }
 
-.audio-item.playing .audio-category { color: var(--primary); }
+.part-group-title {
+    padding: 4px 4px 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-light);
+    letter-spacing: 0.3px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 6px;
+}
 
 /* ============================================================
    空状态
@@ -305,9 +371,6 @@ header h1 {
     background: #eef2ff;
 }
 
-/* ============================================================
-   缓存按钮
-   ============================================================ */
 .mp-cache {
     color: var(--text-light);
 }
@@ -518,7 +581,6 @@ header h1 {
     letter-spacing: 0.5px;
 }
 
-/* 进行中的任务 */
 .manager-task {
     display: flex;
     align-items: center;
@@ -581,7 +643,6 @@ header h1 {
     background: #fee2e2;
 }
 
-/* 已缓存的项 */
 .manager-item {
     display: flex;
     align-items: center;
@@ -676,15 +737,29 @@ header h1 {
         height: 38px;
     }
 
+    .header-back {
+        width: 38px;
+        height: 38px;
+    }
+
     .controls {
         margin-bottom: 12px;
         gap: 10px;
     }
 
-    .search-box,
-    .category-select {
+    .search-box {
         padding: 9px 14px;
         font-size: 0.92rem;
+    }
+
+    .novel-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 14px;
+    }
+
+    .novel-card-title {
+        font-size: 0.92rem;
+        padding: 10px 12px;
     }
 
     .audio-list { gap: 4px; }
@@ -697,7 +772,11 @@ header h1 {
 
     .audio-index { width: 38px; font-size: 0.76rem; }
     .audio-title { font-size: 0.92rem; }
-    .audio-category { font-size: 0.72rem; }
+
+    .part-group-title {
+        font-size: 0.82rem;
+        padding: 6px 4px 10px;
+    }
 
     .mini-player {
         padding: 14px max(24px, calc((100vw - 1000px) / 2));
@@ -777,7 +856,6 @@ header h1 {
     .mp-skip-desktop { display: flex; }
     .mp-skip-mobile { display: none; }
 
-    /* 桌面端弹层居中 */
     .manager {
         left: 50%;
         right: auto;
@@ -833,7 +911,15 @@ header h1 {
 
     .audio-index { width: 26px; font-size: 0.66rem; }
     .audio-title { font-size: 0.8rem; }
-    .audio-category { font-size: 0.64rem; }
+
+    .novel-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 8px;
+    }
+    .novel-card-title {
+        font-size: 0.78rem;
+        padding: 6px 8px;
+    }
 
     .mini-player {
         padding: 6px 8px;
