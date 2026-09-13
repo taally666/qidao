@@ -16,7 +16,7 @@
 //   - Edge F12 → 应用程序 → 存储 → 清除站点数据，可彻底重置
 // ============================================================
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const APP_CACHE = `app-${VERSION}`;
 const DATA_CACHE = `data-${VERSION}`;
 
