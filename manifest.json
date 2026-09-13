@@ -1,0 +1,12 @@
+{
+  "name": "转载奇刀君",
+  "short_name": "奇刀君",
+  "description": "个人音频分享站",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8fafc",
+  "theme_color": "#4f46e5",
+  "lang": "zh-CN"
+}
