@@ -105,8 +105,8 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // data.json：网络优先
-    if (url.pathname.endsWith('/data.json')) {
+    // 所有 .json：网络优先（含 novels.json 和 data-*.json）
+    if (url.pathname.endsWith('.json')) {
         event.respondWith(networkFirst(req, DATA_CACHE));
         return;
     }
