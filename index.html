@@ -35,7 +35,6 @@
         <button class="mp-btn mp-skip mp-skip-desktop" data-skip="15" aria-label="前进15秒">+15</button>
         <button class="mp-btn mp-speed" id="mpSpeedBtn" aria-label="播放速度">1x</button>
         <button class="mp-btn mp-cache" id="mpCacheBtn" aria-label="缓存本 part"></button>
-        <button class="mp-btn mp-download mp-download-desktop" id="mpDownloadBtn" aria-label="下载本集"></button>
         <button class="mp-btn mp-close" id="mpCloseBtn" aria-label="关闭"></button>
         <div class="mp-progress-row">
             <button class="mp-btn mp-skip mp-skip-mobile" data-skip="-15" aria-label="后退15秒">-15</button>
@@ -58,7 +57,6 @@
 
         const SPEEDS = [1, 1.25, 1.5, 2, 0.75];
         let speedIndex = 0;
-        let downloading = false;
         let caching = false;
 
         // 音频缓存名（与 sw.js 里的不冲突，独立管理）
@@ -84,7 +82,6 @@
         const mpSpeedBtn = document.getElementById('mpSpeedBtn');
         const mpPlayBtn = document.getElementById('mpPlayBtn');
         const mpCacheBtn = document.getElementById('mpCacheBtn');
-        const mpDownloadBtn = document.getElementById('mpDownloadBtn');
         const mpCloseBtn = document.getElementById('mpCloseBtn');
 
         // ============================================================
@@ -93,14 +90,12 @@
         const ICON_PLAY = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
         const ICON_PAUSE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
         const ICON_CLOSE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
-        const ICON_DOWNLOAD = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
         const ICON_CLOUD_DOWN = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 13v8"/><path d="m8 17 4 4 4-4"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg>';
         const ICON_CLOUD_CHECK = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 15-5 5-5-5"/><path d="M12 20V9"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg>';
 
         mpPlayBtn.innerHTML = ICON_PLAY;
         mpCloseBtn.innerHTML = ICON_CLOSE;
         mpCacheBtn.innerHTML = ICON_CLOUD_DOWN;
-        mpDownloadBtn.innerHTML = ICON_DOWNLOAD;
 
         // ============================================================
         // 工具函数
@@ -125,14 +120,6 @@
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#39;');
-        }
-
-        function sanitizeFileName(name) {
-            return String(name || 'audio')
-                .replace(/[\\/:*?"<>|\r\n\t]/g, '_')
-                .replace(/\s+/g, ' ')
-                .trim()
-                .slice(0, 100) || 'audio';
         }
 
         // ============================================================
@@ -513,158 +500,6 @@
         }
 
         // ============================================================
-        // 下载单集（WAV）
-        // ============================================================
-        function audioBufferToWav(buffer) {
-            const numChannels = buffer.numberOfChannels;
-            const sampleRate = buffer.sampleRate;
-            const bitDepth = 16;
-            const bytesPerSample = bitDepth / 8;
-            const blockAlign = numChannels * bytesPerSample;
-            const dataLength = buffer.length * blockAlign;
-            const bufferLength = 44 + dataLength;
-
-            const ab = new ArrayBuffer(bufferLength);
-            const view = new DataView(ab);
-
-            function writeString(offset, str) {
-                for (let i = 0; i < str.length; i++) {
-                    view.setUint8(offset + i, str.charCodeAt(i));
-                }
-            }
-
-            writeString(0, 'RIFF');
-            view.setUint32(4, 36 + dataLength, true);
-            writeString(8, 'WAVE');
-            writeString(12, 'fmt ');
-            view.setUint32(16, 16, true);
-            view.setUint16(20, 1, true);
-            view.setUint16(22, numChannels, true);
-            view.setUint32(24, sampleRate, true);
-            view.setUint32(28, sampleRate * blockAlign, true);
-            view.setUint16(32, blockAlign, true);
-            view.setUint16(34, bitDepth, true);
-            writeString(36, 'data');
-            view.setUint32(40, dataLength, true);
-
-            const channels = [];
-            for (let c = 0; c < numChannels; c++) {
-                channels.push(buffer.getChannelData(c));
-            }
-
-            let offset = 44;
-            for (let i = 0; i < buffer.length; i++) {
-                for (let c = 0; c < numChannels; c++) {
-                    let sample = Math.max(-1, Math.min(1, channels[c][i]));
-                    sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
-                    view.setInt16(offset, sample, true);
-                    offset += 2;
-                }
-            }
-
-            return new Blob([ab], { type: 'audio/wav' });
-        }
-
-        function triggerDownload(blob, fileName) {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            setTimeout(() => URL.revokeObjectURL(url), 3000);
-        }
-
-        async function downloadCurrentTrack() {
-            if (downloading) return;
-            if (currentIdx < 0) {
-                alert('请先播放一集');
-                return;
-            }
-
-            const track = allTracks[currentIdx];
-            if (!track.url || track.url === '占位符') {
-                alert('该集尚未配置音频链接');
-                return;
-            }
-
-            downloading = true;
-            mpDownloadBtn.disabled = true;
-            const originalHTML = mpDownloadBtn.innerHTML;
-
-            const setStatus = (text) => {
-                mpDownloadBtn.innerHTML = `<span style="font-size:0.62rem;font-weight:700">${text}</span>`;
-            };
-
-            try {
-                setStatus('读取');
-                // 优先用缓存里的数据
-                let arrayBuffer;
-                const cache = await caches.open(AUDIO_CACHE);
-                const cached = await cache.match(track.url);
-                if (cached) {
-                    arrayBuffer = await cached.arrayBuffer();
-                } else {
-                    const resp = await fetch(track.url, { mode: 'cors' });
-                    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-                    arrayBuffer = await resp.arrayBuffer();
-                }
-
-                setStatus('解码');
-                const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                const audioCtx = new AudioCtx();
-                const fullBuffer = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
-
-                setStatus('切割');
-                const sr = fullBuffer.sampleRate;
-                const startSample = Math.max(0, Math.floor(track.start * sr));
-                const endSample = Math.min(fullBuffer.length, Math.floor(track.end * sr));
-                const numSamples = endSample - startSample;
-                if (numSamples <= 0) throw new Error('无效的时间范围');
-
-                const newBuffer = audioCtx.createBuffer(
-                    fullBuffer.numberOfChannels,
-                    numSamples,
-                    sr
-                );
-                for (let c = 0; c < fullBuffer.numberOfChannels; c++) {
-                    const src = fullBuffer.getChannelData(c);
-                    const dst = newBuffer.getChannelData(c);
-                    for (let i = 0; i < numSamples; i++) {
-                        dst[i] = src[startSample + i];
-                    }
-                }
-                await audioCtx.close();
-
-                setStatus('编码');
-                const wavBlob = audioBufferToWav(newBuffer);
-
-                setStatus('保存');
-                triggerDownload(wavBlob, sanitizeFileName(track.title) + '.wav');
-            } catch (err) {
-                console.error('下载失败:', err);
-                const fallback = confirm(
-                    '单集截取失败：' + (err.message || err) +
-                    '\n\n是否直接下载完整的合并文件？'
-                );
-                if (fallback) {
-                    const a = document.createElement('a');
-                    a.href = track.url;
-                    a.target = '_blank';
-                    a.rel = 'noopener';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                }
-            } finally {
-                downloading = false;
-                mpDownloadBtn.disabled = false;
-                mpDownloadBtn.innerHTML = originalHTML;
-            }
-        }
-
-        // ============================================================
         // 事件绑定
         // ============================================================
         audioListEl.addEventListener('click', (e) => {
@@ -695,7 +530,6 @@
 
         mpCloseBtn.addEventListener('click', closePlayer);
         mpCacheBtn.addEventListener('click', cacheCurrentPart);
-        mpDownloadBtn.addEventListener('click', downloadCurrentTrack);
 
         mpSpeedBtn.addEventListener('click', () => {
             speedIndex = (speedIndex + 1) % SPEEDS.length;
@@ -756,7 +590,6 @@
         searchInput.addEventListener('input', applyFilter);
         categorySelect.addEventListener('change', applyFilter);
 
-        // 网络状态变化时提示（可选）
         window.addEventListener('offline', () => {
             console.log('[Net] 已离线，已缓存的 part 仍可播放');
         });
