@@ -637,7 +637,7 @@ async function renderManager() {
             }
         });
     });
-}
+
 
 async function clearAllCache() {
     if (!confirm('确定清空所有已缓存的 part 吗？')) return;
