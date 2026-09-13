@@ -1,33 +1,34 @@
 // ============================================================
 // 全局状态
 // ============================================================
-let allTracks = [];
-let currentIdx = -1;
+let novelsIndex = null;        // novels.json 加载结果
+let allTracks = [];            // 当前小说的所有 track
+let currentNovel = null;       // 当前打开的小说
+let currentPlaying = null;     // 当前播放的 track 对象（独立于 allTracks）
+
 const audio = new Audio();
 audio.preload = 'none';
 
 const SPEEDS = [1, 1.25, 1.5, 2, 0.75];
 let speedIndex = 0;
 
-// 音频缓存名
 const AUDIO_CACHE = 'audio-v1';
-
-// 已缓存的 blob URL 映射：原始 url → blob url
 const blobUrlCache = new Map();
-
-// part 索引：url → { url, tracks: [...] }
 const partIndex = new Map();
+const novelDataCache = new Map();  // id → data.json 对象
 
-// 当前下载任务（同一时刻最多一个）
-// { url, controller, received, total, startedAt }
 let currentTask = null;
 
 // ============================================================
 // DOM 引用
 // ============================================================
-const audioListEl = document.getElementById('audioList');
+const headerTitle = document.getElementById('headerTitle');
+const headerBackBtn = document.getElementById('headerBackBtn');
+const headerManagerBtn = document.getElementById('headerManagerBtn');
+const controlsBar = document.getElementById('controlsBar');
 const searchInput = document.getElementById('searchInput');
-const categorySelect = document.getElementById('categorySelect');
+const mainView = document.getElementById('mainView');
+
 const miniPlayer = document.getElementById('miniPlayer');
 const mpCover = document.getElementById('mpCover');
 const mpTitle = document.getElementById('mpTitle');
@@ -40,7 +41,6 @@ const mpPlayBtn = document.getElementById('mpPlayBtn');
 const mpCacheBtn = document.getElementById('mpCacheBtn');
 const mpCloseBtn = document.getElementById('mpCloseBtn');
 
-const headerManagerBtn = document.getElementById('headerManagerBtn');
 const managerMask = document.getElementById('managerMask');
 const manager = document.getElementById('manager');
 const managerCloseBtn = document.getElementById('managerCloseBtn');
@@ -53,6 +53,7 @@ const managerFooter = document.getElementById('managerFooter');
 const ICON_PLAY = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
 const ICON_PAUSE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
 const ICON_CLOSE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+const ICON_BACK = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>';
 const ICON_CLOUD_DOWN = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 13v8"/><path d="m8 17 4 4 4-4"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg>';
 const ICON_CLOUD_CHECK = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM10 17l-3.5-3.5 1.41-1.41L10 14.17 15.18 9l1.41 1.41L10 17z"/></svg>';
 const ICON_MANAGER = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
@@ -62,6 +63,7 @@ mpPlayBtn.innerHTML = ICON_PLAY;
 mpCloseBtn.innerHTML = ICON_CLOSE;
 mpCacheBtn.innerHTML = ICON_CLOUD_DOWN;
 headerManagerBtn.innerHTML = ICON_MANAGER;
+headerBackBtn.innerHTML = ICON_BACK;
 managerCloseBtn.innerHTML = ICON_CLOSE;
 
 // ============================================================
@@ -73,9 +75,7 @@ function formatTime(sec) {
     const s = total % 60;
     const m = Math.floor(total / 60) % 60;
     const h = Math.floor(total / 3600);
-    if (h > 0) {
-        return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-    }
+    if (h > 0) return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
     return m + ':' + String(s).padStart(2, '0');
 }
 
@@ -125,6 +125,189 @@ function removePartSizeFromStorage(url) {
 }
 
 // ============================================================
+// 数据扁平化
+// ============================================================
+function flattenData(raw) {
+    const defaults = raw.defaults || {};
+    const categories = raw.categories || {};
+    const audios = raw.audios || [];
+    const flat = [];
+
+    audios.forEach(zone => {
+        const catMeta = categories[zone.category] || {};
+        const cover = zone.cover || catMeta.cover || defaults.cover || '';
+        const tracks = Array.isArray(zone.tracks) ? zone.tracks : [];
+        tracks.forEach(t => {
+            flat.push({
+                title: t.title || '',
+                url: zone.url || '',
+                start: Number(t.start) || 0,
+                end: Number(t.end) || 0,
+                category: zone.category || '',
+                cover: cover,
+            });
+        });
+    });
+
+    flat.forEach((t, i) => { t._idx = i; });
+    return flat;
+}
+
+// ============================================================
+// 视图切换
+// ============================================================
+async function showNovelList() {
+    currentNovel = null;
+    allTracks = [];
+    partIndex.clear();
+
+    headerTitle.textContent = '转载奇刀君';
+    headerBackBtn.style.display = 'none';
+    controlsBar.style.display = 'none';
+
+    // URL 恢复
+    const url = new URL(window.location);
+    url.searchParams.delete('novel');
+    history.pushState({}, '', url);
+
+    renderNovelList();
+}
+
+async function showNovelDetail(id, pushState = true) {
+    // 加载小说数据
+    let raw = novelDataCache.get(id);
+    if (!raw) {
+        const novel = novelsIndex.novels.find(n => n.id === id);
+        if (!novel) {
+            alert('未找到该小说');
+            showNovelList();
+            return;
+        }
+        try {
+            const resp = await fetch(novel.file);
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            raw = await resp.json();
+            novelDataCache.set(id, raw);
+        } catch (e) {
+            mainView.innerHTML = `<div class="empty-message">⚠️ 无法加载小说数据：${e.message}</div>`;
+            return;
+        }
+    }
+
+    currentNovel = novelsIndex.novels.find(n => n.id === id) || { id, title: id };
+    allTracks = flattenData(raw);
+    buildPartIndex();
+
+    headerTitle.textContent = currentNovel.title;
+    headerBackBtn.style.display = 'flex';
+    controlsBar.style.display = 'flex';
+    searchInput.value = '';
+
+    if (pushState) {
+        const url = new URL(window.location);
+        url.searchParams.set('novel', id);
+        history.pushState({ novelId: id }, '', url);
+    }
+
+    renderTrackList(allTracks);
+}
+
+// ============================================================
+// 渲染：小说列表
+// ============================================================
+function renderNovelList() {
+    if (!novelsIndex || !novelsIndex.novels || novelsIndex.novels.length === 0) {
+        mainView.innerHTML = `<div class="empty-message">暂无小说</div>`;
+        return;
+    }
+
+    mainView.innerHTML = `
+        <div class="novel-grid">
+            ${novelsIndex.novels.map(n => `
+                <div class="novel-card" data-id="${escapeHtml(n.id)}">
+                    ${n.cover
+                        ? `<img class="novel-card-cover" src="${escapeHtml(n.cover)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+                        : `<div class="novel-card-cover"></div>`}
+                    <div class="novel-card-title">${escapeHtml(n.title)}</div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+// ============================================================
+// 渲染：详情（按篇分组）
+// ============================================================
+function renderTrackList(tracks) {
+    if (tracks.length === 0) {
+        mainView.innerHTML = `<div class="empty-message">🔍 没有找到匹配的音频</div>`;
+        return;
+    }
+
+    // 按 category（篇）分组，保持顺序
+    const groups = [];
+    const groupMap = new Map();
+    tracks.forEach(t => {
+        const cat = t.category || '未分类';
+        if (!groupMap.has(cat)) {
+            const g = { category: cat, tracks: [] };
+            groupMap.set(cat, g);
+            groups.push(g);
+        }
+        groupMap.get(cat).tracks.push(t);
+    });
+
+    let html = '';
+    groups.forEach(g => {
+        html += `<div class="part-group">`;
+        html += `<div class="part-group-title">${escapeHtml(g.category)}</div>`;
+        g.tracks.forEach((t, i) => {
+            html += `
+                <div class="audio-item" data-idx="${t._idx}">
+                    <span class="audio-index">${i + 1}</span>
+                    <span class="audio-title">${escapeHtml(t.title)}</span>
+                </div>
+            `;
+        });
+        html += `</div>`;
+    });
+
+    mainView.innerHTML = html;
+    updateHighlight();
+}
+
+// ============================================================
+// 搜索
+// ============================================================
+function applyFilter() {
+    if (!currentNovel) return;
+    const keyword = searchInput.value.toLowerCase().trim();
+    if (!keyword) {
+        renderTrackList(allTracks);
+        return;
+    }
+
+    const filtered = allTracks.filter(item =>
+        item.title.toLowerCase().includes(keyword)
+    );
+    renderTrackList(filtered);
+}
+
+// ============================================================
+// 高亮
+// ============================================================
+function updateHighlight() {
+    document.querySelectorAll('.audio-item').forEach(el => {
+        const idx = parseInt(el.dataset.idx, 10);
+        const t = allTracks[idx];
+        const isPlaying = currentPlaying && t &&
+            t.url === currentPlaying.url &&
+            t.start === currentPlaying.start;
+        el.classList.toggle('playing', isPlaying);
+    });
+}
+
+// ============================================================
 // 缓存操作
 // ============================================================
 async function isUrlCached(url) {
@@ -138,7 +321,6 @@ async function isUrlCached(url) {
     }
 }
 
-// 返回可给 audio.src 使用的地址
 async function getAudioSrc(url) {
     if (!url || url === '占位符') return url;
     if (blobUrlCache.has(url)) return blobUrlCache.get(url);
@@ -158,25 +340,23 @@ async function getAudioSrc(url) {
     return url;
 }
 
-// 更新播放器上缓存按钮的状态
 async function refreshCacheBtn() {
-    if (currentIdx < 0) {
+    if (!currentPlaying) {
         mpCacheBtn.innerHTML = ICON_CLOUD_DOWN;
         mpCacheBtn.classList.remove('cached', 'downloading');
         mpCacheBtn.title = '';
         return;
     }
 
-    const track = allTracks[currentIdx];
-    if (!track || !track.url) return;
+    const url = currentPlaying.url;
+    if (!url || url === '占位符') return;
 
-    // 下载中
-    if (currentTask && currentTask.url === track.url) {
+    if (currentTask && currentTask.url === url) {
         updateDownloadingUI();
         return;
     }
 
-    const cached = await isUrlCached(track.url);
+    const cached = await isUrlCached(url);
     if (cached) {
         mpCacheBtn.innerHTML = ICON_CLOUD_CHECK;
         mpCacheBtn.classList.remove('downloading');
@@ -212,17 +392,12 @@ async function startDownload(url) {
     const info = partIndex.get(url);
     const count = info ? info.tracks.length : 0;
 
-    // 尝试获取大小（HEAD 请求）
     let sizeText = '大小未知';
     try {
         const head = await fetch(url, { method: 'HEAD', mode: 'cors' });
         const len = head.headers.get('Content-Length');
-        if (len) {
-            sizeText = formatSize(parseInt(len, 10));
-        }
-    } catch (e) {
-        // 忽略
-    }
+        if (len) sizeText = formatSize(parseInt(len, 10));
+    } catch (e) {}
 
     const msg = `本 part 包含 ${count} 集，${sizeText}。\n\n缓存后可离线收听这些集。\n\n开始缓存？`;
     if (!confirm(msg)) return;
@@ -257,14 +432,12 @@ async function startDownload(url) {
             received += value.length;
             currentTask.received = received;
             updateDownloadingUI();
-            // 管理面板同步更新（每 512KB 才刷新）
             if (manager.classList.contains('open') && received % 524288 < value.length) {
                 renderManager();
             }
         }
 
         const blob = new Blob(chunks, { type: 'audio/mp4' });
-
         const cache = await caches.open(AUDIO_CACHE);
         await cache.put(url, new Response(blob, {
             headers: {
@@ -272,7 +445,6 @@ async function startDownload(url) {
                 'Content-Length': String(blob.size),
             },
         }));
-
         setPartSizeToStorage(url, blob.size);
     } catch (err) {
         if (err.name === 'AbortError') {
@@ -288,29 +460,21 @@ async function startDownload(url) {
     }
 }
 
-// ============================================================
-// 缓存按钮点击
-// ============================================================
 async function onCacheBtnClick() {
-    if (currentIdx < 0) return;
-    const track = allTracks[currentIdx];
-    if (!track || !track.url || track.url === '占位符') return;
+    if (!currentPlaying) return;
+    const url = currentPlaying.url;
+    if (!url || url === '占位符') return;
 
-    const url = track.url;
-
-    // 正在下载本 part → 取消
     if (currentTask && currentTask.url === url) {
         currentTask.controller.abort();
         return;
     }
 
-    // 有其他任务在跑 → 提示
     if (currentTask) {
         alert('已有下载任务进行中，请先等待完成或取消。');
         return;
     }
 
-    // 已缓存 → 询问删除
     if (await isUrlCached(url)) {
         if (!confirm('本 part 已缓存。\n\n确定要删除缓存吗？删除后此 part 将无法离线收听。')) {
             return;
@@ -319,13 +483,9 @@ async function onCacheBtnClick() {
         return;
     }
 
-    // 开始下载
     await startDownload(url);
 }
 
-// ============================================================
-// 删除
-// ============================================================
 async function deletePartByUrl(url) {
     try {
         const cache = await caches.open(AUDIO_CACHE);
@@ -343,7 +503,7 @@ async function deletePartByUrl(url) {
 }
 
 // ============================================================
-// 缓存管理弹层
+// 缓存管理
 // ============================================================
 function openManager() {
     manager.classList.add('open');
@@ -361,7 +521,6 @@ function closeManager() {
 async function renderManager() {
     const cache = await caches.open(AUDIO_CACHE);
 
-    // 遍历 partIndex 找到已缓存的
     const cachedItems = [];
     for (const [url, info] of partIndex) {
         const resp = await cache.match(url);
@@ -376,14 +535,10 @@ async function renderManager() {
         }
     }
 
-    // 进行中的任务
     const tasks = currentTask ? [currentTask] : [];
-
-    // 计算总占用
     let totalSize = 0;
     cachedItems.forEach(i => { totalSize += i.size; });
 
-    // 渲染
     let html = '';
 
     if (tasks.length > 0) {
@@ -400,7 +555,7 @@ async function renderManager() {
                         <div class="mt-sub">${sub}</div>
                         <div class="mt-progress"><div class="mt-progress-bar" style="width:${pct}%"></div></div>
                     </div>
-                    <button class="mt-cancel" data-action="cancel">取消</button>
+                    <button class="mt-cancel">取消</button>
                 </div>
             `;
         });
@@ -427,7 +582,6 @@ async function renderManager() {
 
     managerBody.innerHTML = html;
 
-    // 底栏
     if (cachedItems.length > 0) {
         managerFooter.innerHTML = `
             <button class="mf-clear" id="mfClearBtn">清空全部（${formatSize(totalSize)}）</button>
@@ -437,7 +591,6 @@ async function renderManager() {
         managerFooter.innerHTML = '';
     }
 
-    // 绑定事件
     managerBody.querySelectorAll('.mt-cancel').forEach(btn => {
         btn.addEventListener('click', () => {
             if (currentTask) currentTask.controller.abort();
@@ -456,9 +609,7 @@ async function renderManager() {
 async function clearAllCache() {
     if (!confirm('确定清空所有已缓存的 part 吗？')) return;
 
-    if (currentTask) {
-        currentTask.controller.abort();
-    }
+    if (currentTask) currentTask.controller.abort();
 
     try {
         const cache = await caches.open(AUDIO_CACHE);
@@ -510,103 +661,16 @@ window.addEventListener('resize', () => {
 });
 
 // ============================================================
-// 数据扁平化 & 渲染
-// ============================================================
-function flattenData(raw) {
-    const defaults = raw.defaults || {};
-    const categories = raw.categories || {};
-    const audios = raw.audios || [];
-    const flat = [];
-
-    audios.forEach(zone => {
-        const catMeta = categories[zone.category] || {};
-        const cover = zone.cover || catMeta.cover || defaults.cover || '';
-        const tracks = Array.isArray(zone.tracks) ? zone.tracks : [];
-        tracks.forEach(t => {
-            flat.push({
-                title: t.title || '',
-                url: zone.url || '',
-                start: Number(t.start) || 0,
-                end: Number(t.end) || 0,
-                category: zone.category || '',
-                cover: cover,
-            });
-        });
-    });
-
-    flat.forEach((t, i) => { t._idx = i; });
-    return flat;
-}
-
-async function loadData() {
-    try {
-        const response = await fetch('data.json');
-        if (!response.ok) throw new Error('无法加载 data.json');
-        const raw = await response.json();
-        allTracks = flattenData(raw);
-        buildPartIndex();
-        renderList(allTracks);
-        populateCategories(allTracks);
-    } catch (error) {
-        audioListEl.innerHTML = `<div class="empty-message">⚠️ 数据加载失败，请确保 data.json 与 index.html 在同一目录下。</div>`;
-        console.error(error);
-    }
-}
-
-function renderList(tracks) {
-    if (tracks.length === 0) {
-        audioListEl.innerHTML = `<div class="empty-message">🔍 没有找到匹配的音频</div>`;
-        return;
-    }
-
-    audioListEl.innerHTML = tracks.map((t, i) => {
-        return `
-            <div class="audio-item" data-idx="${t._idx}">
-                <span class="audio-index">${i + 1}</span>
-                <span class="audio-title">${escapeHtml(t.title)}</span>
-                ${t.category ? `<span class="audio-category">${escapeHtml(t.category)}</span>` : ''}
-            </div>
-        `;
-    }).join('');
-
-    updateHighlight();
-}
-
-function populateCategories(tracks) {
-    const categories = [...new Set(tracks.map(item => item.category).filter(Boolean))];
-    categorySelect.innerHTML = '<option value="">全部</option>' +
-        categories.map(cat => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join('');
-}
-
-function applyFilter() {
-    const keyword = searchInput.value.toLowerCase().trim();
-    const cat = categorySelect.value;
-
-    const filtered = allTracks.filter(item => {
-        const titleMatch = item.title.toLowerCase().includes(keyword);
-        const catOk = !cat || item.category === cat;
-        const keywordOk = !keyword || titleMatch;
-        return keywordOk && catOk;
-    });
-
-    renderList(filtered);
-}
-
-function updateHighlight() {
-    document.querySelectorAll('.audio-item').forEach(el => {
-        const idx = parseInt(el.dataset.idx, 10);
-        el.classList.toggle('playing', idx === currentIdx);
-    });
-}
-
-// ============================================================
 // 播放
 // ============================================================
-async function playTrack(idx) {
-    const track = allTracks[idx];
+async function playTrack(track) {
     if (!track) return;
 
-    if (idx === currentIdx) {
+    const isSame = currentPlaying &&
+        currentPlaying.url === track.url &&
+        currentPlaying.start === track.start;
+
+    if (isSame) {
         if (audio.paused) {
             audio.play().catch(console.error);
         } else {
@@ -623,9 +687,8 @@ async function playTrack(idx) {
         }
     }
 
-    const prevTrack = currentIdx >= 0 ? allTracks[currentIdx] : null;
-    const sameFile = prevTrack && prevTrack.url === track.url && audio.src;
-    currentIdx = idx;
+    const sameFile = currentPlaying && currentPlaying.url === track.url && audio.src;
+    currentPlaying = track;
 
     if (sameFile) {
         audio.currentTime = track.start;
@@ -685,8 +748,8 @@ function updateMiniPlayer(track) {
 }
 
 function updateProgress() {
-    if (currentIdx < 0) return;
-    const track = allTracks[currentIdx];
+    if (!currentPlaying) return;
+    const track = currentPlaying;
     const dur = track.end - track.start;
     const pos = Math.max(0, Math.min(dur, audio.currentTime - track.start));
 
@@ -699,7 +762,7 @@ function closePlayer() {
     audio.pause();
     audio.removeAttribute('src');
     audio.load();
-    currentIdx = -1;
+    currentPlaying = null;
     miniPlayer.classList.remove('active');
     updateHighlight();
     refreshCacheBtn();
@@ -708,11 +771,25 @@ function closePlayer() {
 // ============================================================
 // 事件绑定
 // ============================================================
-audioListEl.addEventListener('click', (e) => {
+mainView.addEventListener('click', (e) => {
+    // 小说卡片
+    const card = e.target.closest('.novel-card');
+    if (card) {
+        const id = card.dataset.id;
+        showNovelDetail(id);
+        return;
+    }
+
+    // 音频项
     const item = e.target.closest('.audio-item');
-    if (!item) return;
-    const idx = parseInt(item.dataset.idx, 10);
-    playTrack(idx);
+    if (item) {
+        const idx = parseInt(item.dataset.idx, 10);
+        playTrack(allTracks[idx]);
+    }
+});
+
+headerBackBtn.addEventListener('click', () => {
+    history.back();
 });
 
 mpPlayBtn.addEventListener('click', () => {
@@ -727,10 +804,12 @@ mpPlayBtn.addEventListener('click', () => {
 miniPlayer.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-skip]');
     if (!btn) return;
-    if (currentIdx < 0) return;
+    if (!currentPlaying) return;
     const delta = parseInt(btn.dataset.skip, 10);
-    const track = allTracks[currentIdx];
-    audio.currentTime = Math.max(track.start, Math.min(track.end, audio.currentTime + delta));
+    audio.currentTime = Math.max(
+        currentPlaying.start,
+        Math.min(currentPlaying.end, audio.currentTime + delta)
+    );
     updateProgress();
 });
 
@@ -748,14 +827,13 @@ mpSpeedBtn.addEventListener('click', () => {
 });
 
 mpProgressWrap.addEventListener('click', (e) => {
-    if (currentIdx < 0) return;
-    const track = allTracks[currentIdx];
-    const dur = track.end - track.start;
+    if (!currentPlaying) return;
+    const dur = currentPlaying.end - currentPlaying.start;
     if (dur <= 0) return;
 
     const rect = mpProgressWrap.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    audio.currentTime = track.start + pct * dur;
+    audio.currentTime = currentPlaying.start + pct * dur;
     updateProgress();
 });
 
@@ -768,14 +846,18 @@ audio.addEventListener('pause', () => {
 });
 
 audio.addEventListener('timeupdate', () => {
-    if (currentIdx < 0) return;
-    const track = allTracks[currentIdx];
+    if (!currentPlaying) return;
+    const track = currentPlaying;
 
     updateProgress();
 
     if (!audio.paused && audio.currentTime >= track.end - 0.05) {
-        if (currentIdx + 1 < allTracks.length) {
-            playTrack(currentIdx + 1);
+        // 找下一集
+        const idx = allTracks.findIndex(t =>
+            t.url === track.url && t.start === track.start
+        );
+        if (idx >= 0 && idx + 1 < allTracks.length) {
+            playTrack(allTracks[idx + 1]);
         } else {
             audio.pause();
             audio.currentTime = track.end;
@@ -798,9 +880,7 @@ audio.addEventListener('error', () => {
 });
 
 searchInput.addEventListener('input', applyFilter);
-categorySelect.addEventListener('change', applyFilter);
 
-// 下载中：管理面板开着时定时刷新
 setInterval(() => {
     if (currentTask && manager.classList.contains('open')) {
         renderManager();
@@ -808,10 +888,37 @@ setInterval(() => {
 }, 1000);
 
 // ============================================================
+// URL 参数处理
+// ============================================================
+function handleUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const novelId = params.get('novel');
+    if (novelId) {
+        showNovelDetail(novelId, false);
+    } else {
+        showNovelList();
+    }
+}
+
+window.addEventListener('popstate', handleUrl);
+
+// ============================================================
 // 初始化
 // ============================================================
-updateSpeedBtn();
-loadData();
+async function init() {
+    updateSpeedBtn();
+    try {
+        const resp = await fetch('novels.json');
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        novelsIndex = await resp.json();
+    } catch (e) {
+        mainView.innerHTML = `<div class="empty-message">⚠️ 无法加载 novels.json：${e.message}</div>`;
+        return;
+    }
+    handleUrl();
+}
+
+init();
 
 // ============================================================
 // Service Worker 注册
@@ -819,11 +926,7 @@ loadData();
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js')
-            .then((reg) => {
-                console.log('[PWA] SW 已注册，作用域:', reg.scope);
-            })
-            .catch((err) => {
-                console.error('[PWA] SW 注册失败:', err);
-            });
+            .then((reg) => console.log('[PWA] SW 已注册，作用域:', reg.scope))
+            .catch((err) => console.error('[PWA] SW 注册失败:', err));
     });
 }
