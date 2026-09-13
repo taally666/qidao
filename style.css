@@ -93,7 +93,7 @@ header h1 {
 .category-select:focus { outline: none; border-color: var(--primary); }
 
 /* ============================================================
-   列表
+   列表：扁平集列表
    ============================================================ */
 .audio-list {
     display: flex;
@@ -210,6 +210,7 @@ header h1 {
     display: block;
 }
 
+/* 通用按钮 */
 .mp-btn {
     flex-shrink: 0;
     width: 36px;
@@ -236,6 +237,7 @@ header h1 {
 
 .mp-close { color: var(--text-light); }
 
+/* ±15s 按钮 */
 .mp-skip {
     width: auto;
     min-width: 30px;
@@ -257,6 +259,7 @@ header h1 {
 /* 手机端：桌面专用的 ±15 按钮隐藏 */
 .mp-skip-desktop { display: none; }
 
+/* 倍速按钮 */
 .mp-speed {
     width: auto;
     min-width: 40px;
@@ -275,6 +278,48 @@ header h1 {
     color: var(--primary);
     background: #eef2ff;
 }
+
+/* ============================================================
+   缓存按钮（云下载）
+   ============================================================ */
+.mp-cache {
+    color: var(--text-light);
+}
+.mp-cache:hover {
+    color: var(--primary);
+    background: #eef2ff;
+}
+.mp-cache.cached {
+    color: var(--primary);
+}
+.mp-cache.cached:hover {
+    color: #dc2626;
+    background: #fef2f2;
+}
+.mp-cache:disabled {
+    opacity: 0.6;
+    cursor: default;
+    background: transparent;
+}
+
+/* ============================================================
+   下载按钮（WAV 导出）
+   ============================================================ */
+.mp-download {
+    color: var(--text-light);
+}
+.mp-download:hover {
+    color: var(--primary);
+    background: #eef2ff;
+}
+.mp-download:disabled {
+    opacity: 0.6;
+    cursor: default;
+    background: transparent;
+}
+
+/* 手机端隐藏下载按钮，只保留缓存按钮 */
+.mp-download-desktop { display: none; }
 
 /* ============================================================
    标题（自动滚动）
@@ -447,6 +492,18 @@ header h1 {
         font-size: 0.85rem;
     }
 
+    /* 缓存按钮桌面尺寸 */
+    .mp-cache {
+        width: 40px;
+        height: 40px;
+    }
+
+    /* 下载按钮桌面尺寸 */
+    .mp-download {
+        width: 40px;
+        height: 40px;
+    }
+
     .mp-title {
         font-size: 1rem;
         font-weight: 600;
@@ -456,7 +513,7 @@ header h1 {
         font-size: 0.8rem;
     }
 
-    /* 进度条加高，视觉更醒目 */
+    /* 进度条加高 */
     .mp-progress-row {
         gap: 12px;
     }
@@ -468,9 +525,12 @@ header h1 {
         border-radius: 3px;
     }
 
-    /* 桌面端切换 ±15s 分组：显示标题后那组，隐藏进度条行内的 */
+    /* 桌面端切换按钮分组 */
     .mp-skip-desktop { display: flex; }
     .mp-skip-mobile { display: none; }
+
+    /* 桌面端显示下载按钮 */
+    .mp-download-desktop { display: flex; }
 }
 
 /* ============================================================
@@ -519,6 +579,7 @@ header h1 {
     .mp-btn { width: 32px; height: 32px; }
     .mp-skip { min-width: 26px; height: 26px; font-size: 0.6rem; padding: 0 4px; }
     .mp-speed { min-width: 36px; height: 32px; font-size: 0.72rem; padding: 0 6px; }
+    .mp-cache { width: 32px; height: 32px; }
 
     .mp-title { font-size: 0.8rem; }
     .mp-time { font-size: 0.62rem; }
