@@ -11,18 +11,16 @@
 <body>
     <div class="container">
         <header>
-            <h1>转载奇刀君</h1>
+            <button class="header-back" id="headerBackBtn" aria-label="返回" style="display:none"></button>
+            <h1 id="headerTitle">转载奇刀君</h1>
             <button class="header-manager" id="headerManagerBtn" aria-label="缓存管理"></button>
         </header>
 
-        <div class="controls">
+        <div class="controls" id="controlsBar">
             <input type="text" id="searchInput" class="search-box" placeholder="搜索..." inputmode="search">
-            <select id="categorySelect" class="category-select">
-                <option value="">全部</option>
-            </select>
         </div>
 
-        <div id="audioList" class="audio-list"></div>
+        <div id="mainView"></div>
     </div>
 
     <!-- 底部迷你播放器 -->
@@ -54,7 +52,6 @@
             <h2>缓存管理</h2>
             <button class="manager-close" id="managerCloseBtn" aria-label="关闭"></button>
         </div>
-
         <div class="manager-body" id="managerBody"></div>
         <div class="manager-footer" id="managerFooter"></div>
     </div>
