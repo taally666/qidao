@@ -225,9 +225,11 @@ function renderNovelList() {
         <div class="novel-grid">
             ${novelsIndex.novels.map(n => `
                 <div class="novel-card" data-id="${escapeHtml(n.id)}" title="${escapeHtml(n.title)}">
-                    ${n.cover
-                        ? `<img class="novel-card-cover" src="${escapeHtml(n.cover)}" alt="" loading="lazy" onerror="this.style.display='none'">`
-                        : `<div class="novel-card-cover"></div>`}
+                    <div class="novel-card-cover-wrap">
+                        ${n.cover
+                            ? `<img class="novel-card-cover" src="${escapeHtml(n.cover)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+                            : ''}
+                    </div>
                     <div class="novel-card-title">${escapeHtml(n.title)}</div>
                 </div>
             `).join('')}
