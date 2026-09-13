@@ -901,12 +901,41 @@ function handleUrl() {
 }
 
 window.addEventListener('popstate', handleUrl);
+// ============================================================
+// 悬停提示
+// ============================================================
+function setupTooltips() {
+    // 头部
+    headerManagerBtn.title = '缓存管理';
+    headerBackBtn.title = '返回小说列表';
+
+    // 播放器
+    mpPlayBtn.title = '播放 / 暂停';
+    mpSpeedBtn.title = '切换播放速度';
+    mpCacheBtn.title = '缓存本 part（离线收听）';
+    mpCloseBtn.title = '关闭播放器';
+
+    // ±15s（两组按钮，桌面和手机）
+    document.querySelectorAll('[data-skip="-15"]').forEach(b => {
+        b.title = '后退 15 秒';
+    });
+    document.querySelectorAll('[data-skip="15"]').forEach(b => {
+        b.title = '前进 15 秒';
+    });
+
+    // 缓存管理弹层
+    managerCloseBtn.title = '关闭';
+
+    // 小说卡片
+    // 每张卡片的 title 在渲染时动态设置（见下方 renderNovelList 改动）
+}
 
 // ============================================================
 // 初始化
 // ============================================================
 async function init() {
     updateSpeedBtn();
+    setupTooltips();
     try {
         const resp = await fetch('novels.json');
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
