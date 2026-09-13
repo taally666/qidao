@@ -5,6 +5,12 @@
       "title": "鼠克之疯狂童话丨玩转游戏的中二少年丨奇刀宇宙",
       "cover": "https://imagev2.xmcdn.com/storages/f264-audiofreehighqps/94/E2/GMCoOSEJzbuFAAjhogK5ZFCy.jpeg!strip=1&quality=7&magick=webp",
       "file": "story/data-001.json"
+    },
+    {
+      "id": "shuke",
+      "title": "猫成成之书中奇旅丨反派怎么活下来丨奇刀宇宙",
+      "cover": "https://imagev2.xmcdn.com/storages/209d-audiofreehighqps/4B/AB/GAqhw84KwqVKAA2BWwMSfw9y.jpeg!strip=1&quality=7&magick=webp",
+      "file": "story/data-002.json"
     }
   ]
 }
