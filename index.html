@@ -16,8 +16,11 @@
             <button class="header-manager" id="headerManagerBtn" aria-label="缓存管理"></button>
         </header>
 
-        <div class="controls" id="controlsBar">
+        <div class="controls" id="controlsBar" style="display:none">
             <input type="text" id="searchInput" class="search-box" placeholder="搜索..." inputmode="search">
+            <select id="categorySelect" class="category-select">
+                <option value="">全部</option>
+            </select>
         </div>
 
         <div id="mainView"></div>
